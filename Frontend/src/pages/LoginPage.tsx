@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card } from '../components/ui/card';
-import logoImage from '../components/photos/LumenIQ Logo.png';
+import logoImage from '../components/photos/whiteLogo.png';
 import { ArrowLeftIcon } from 'lucide-react';
+
+declare global {
+  interface Window {
+    UnicornStudio?: {
+      init: () => void;
+    };
+  }
+}
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -16,6 +24,31 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    const existingScript = document.querySelector('script[data-unicornstudio]');
+    if (existingScript) {
+      window.UnicornStudio?.init();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src =
+      'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.5/dist/unicornStudio.umd.js';
+    script.async = true;
+    script.dataset.unicornstudio = 'true';
+    script.onload = () => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          window.UnicornStudio?.init();
+        });
+      } else {
+        window.UnicornStudio?.init();
+      }
+    };
+
+    (document.head || document.body).appendChild(script);
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Mock login - in production this would use Firebase auth
@@ -24,39 +57,40 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500/20 via-slate-950 to-slate-950 text-white">
+    <div className="min-h-screen text-white">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-slate-950" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-slate-950 to-slate-950" />
-        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
-      </div>
+          <div
+            data-us-project="57WCL9Xqt44BBvTV9ehL"
+            data-us-production="true"
+            data-us-lazyload="true"
+            className="h-full w-full"
+          />
+          <div className="absolute inset-0 bg-slate-950/55" aria-hidden="true" />
+        </div>
       <div className="fixed top-4 left-4 w-fit h-fit z-10">
-        <Button onClick={() => navigate('/')} className="bg-white/85 text-slate-900 hover:bg-white/90">
+        <Button onClick={() => navigate('/')} className="text-white bg-transparent hover:bg-white/10">
           <ArrowLeftIcon className="w-4 h-4" />
           Back
         </Button>
       </div>
-      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-12 font-switzer sm:px-6">
-        <Card className="w-full max-w-md space-y-6 border-white/15 bg-white/85 p-8 text-slate-900 shadow-xl backdrop-blur">
+      <div className="relative mx-auto flex min-h-screen items-center justify-center px-4 py-12 font-switzer sm:px-6">
+        <Card className="w-full max-w-xl space-y-6 border-white/15 bg-transparent p-8 text-slate-900 shadow-xl backdrop-blur">
           {/* Logo */}
-          <div className="flex justify-center">
-            <img src={logoImage} alt="LumenIQ" className="h-12 w-auto" />
+          <div className="flex justify-center items-center gap-2">
+            <img src={logoImage} alt="LumenIQ" className="h-16 w-auto" />
+            <p className="text-4xl font-outfit font-outift text-white">LumenIQ</p>
           </div>
 
           {/* Title */}
           <div className="text-center space-y-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/80 px-4 py-1 text-xs font-medium text-slate-700">
-              <span className="h-2 w-2 rounded-full bg-blue-500" />
-              Welcome back
-            </span>
-            <h1 className="text-2xl font-outfit text-slate-900">Sign in to LumenIQ</h1>
-            <p className="text-sm text-slate-600">Pick up where you left off and keep your social on autopilot.</p>
+            <h1 className="text-2xl font-outfit text-white">Sign in to your account</h1>
+            <p className="text-sm text-white">Pick up where you left off and keep your social on autopilot.</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">
+              <Label htmlFor="email" className="text-white">
                 Email
               </Label>
               <Input
@@ -71,7 +105,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
+              <Label htmlFor="password" className="text-white">
                 Password
               </Label>
               <Input
@@ -88,16 +122,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <Button type="submit" className="w-full gradient-blue-primary text-white hover:opacity-90">
               Sign In
             </Button>
+
+            <div className="text-center text-sm text-white">
+              Sign in with Google (NextAuth will go here)
+            </div>
           </form>
 
           {/* Signup Link */}
-          <div className="text-center text-sm">
-            <span className="text-slate-600">Don't have an account? </span>
+          <div className="text-center text-sm flex flex-col">
+            <span className="text-white">Don't have an account?</span>
             <button
               onClick={() => navigate('/signup')}
-              className="text-blue-600 hover:underline font-medium"
+              className="text-white hover:text-blue-300 hover:underline"
             >
-              Sign up
+              Sign up here
             </button>
           </div>
         </Card>

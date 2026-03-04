@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
-import logoImage from '../components/photos/LumenIQ Logo.png';
+import logoImage from '../components/photos/whiteLogo.png';
 import { Button } from '../components/ui/button';
 import { ArrowLeftIcon } from 'lucide-react';
+
+declare global {
+  interface Window {
+    UnicornStudio?: {
+      init: () => void;
+    };
+  }
+}
+
 
 interface SignupPageProps {
   onSignup: () => void;
@@ -13,6 +22,31 @@ export function SignupPage({ onSignup }: SignupPageProps) {
   const navigate = useNavigate();
   const [businessType, setBusinessType] = useState<'digital' | 'physical' | null>(null);
 
+  useEffect(() => {
+    const existingScript = document.querySelector('script[data-unicornstudio]');
+    if (existingScript) {
+      window.UnicornStudio?.init();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src =
+      'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.5/dist/unicornStudio.umd.js';
+    script.async = true;
+    script.dataset.unicornstudio = 'true';
+    script.onload = () => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          window.UnicornStudio?.init();
+        });
+      } else {
+        window.UnicornStudio?.init();
+      }
+    };
+
+    (document.head || document.body).appendChild(script);
+  }, []);
+
   const handleBusinessTypeSelect = (type: 'digital' | 'physical') => {
     setBusinessType(type);
     // Mock signup - in production this would proceed to full signup form
@@ -21,33 +55,34 @@ export function SignupPage({ onSignup }: SignupPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500/20 via-slate-950 to-slate-950 text-white">
+    <div className="text-white">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-slate-950" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-slate-950 to-slate-950" />
-        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+        <div
+          data-us-project="57WCL9Xqt44BBvTV9ehL"
+          data-us-production="true"
+          data-us-lazyload="true"
+          className="h-full w-full"
+        />
+        <div className="absolute inset-0 bg-slate-950/55" aria-hidden="true" />
       </div>
       <div className="fixed top-4 left-4 w-fit h-fit z-10">
-        <Button onClick={() => navigate('/')} className="bg-white/85 text-slate-900 hover:bg-white/90">
+        <Button onClick={() => navigate('/')} className="text-white bg-transparent hover:bg-white/10">
           <ArrowLeftIcon className="w-4 h-4" />
           Back
         </Button>
       </div>
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-12 font-switzer sm:px-6">
-        <Card className="w-full max-w-4xl space-y-6 border-white/15 bg-white/90 p-8 text-slate-900 shadow-xl backdrop-blur">
+        <Card className="w-full max-w-4xl space-y-6 border-white/15 bg-transparent p-8 text-white shadow-xl backdrop-blur">
           {/* Logo */}
-          <div className="flex justify-center">
-            <img src={logoImage} alt="LumenIQ" className="h-12 w-auto" />
+          <div className="flex justify-center items-center gap-2">
+            <img src={logoImage} alt="LumenIQ" className="h-16 w-auto" />
+            <p className="text-4xl font-outfit font-outift text-white">LumenIQ</p>
           </div>
 
           {/* Title */}
           <div className="text-center space-y-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/80 px-4 py-1 text-xs font-medium text-slate-700">
-              <span className="h-2 w-2 rounded-full bg-blue-500" />
-              Build your first week
-            </span>
-            <h1 className="text-2xl font-outfit text-slate-900">Get started with LumenIQ</h1>
-            <p className="text-sm text-slate-600">Choose your business type to see tailored setup recommendations.</p>
+            <h1 className="text-2xl font-outfit text-white">Get started with LumenIQ</h1>
+            <p className="text-sm text-white">Choose your business type to see tailored setup recommendations.</p>
           </div>
 
           {/* Business Type Selection */}
@@ -55,11 +90,7 @@ export function SignupPage({ onSignup }: SignupPageProps) {
             {/* Digital Business */}
             <button
               onClick={() => handleBusinessTypeSelect('digital')}
-              className={`p-6 rounded-2xl border-2 transition-all text-left hover:shadow-lg ${
-                businessType === 'digital'
-                  ? 'border-blue-500/70 bg-blue-50'
-                  : 'border-slate-200 hover:border-blue-300'
-              }`}
+              className="p-6 rounded-2xl border-2 border-transparent transition-all text-left hover:shadow-lg bg-white/20 hover:border-blue-300"
             >
               <div className="space-y-4">
                 <div className="w-12 h-12 rounded-lg gradient-blue-accent flex items-center justify-center">
@@ -68,12 +99,12 @@ export function SignupPage({ onSignup }: SignupPageProps) {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-outfit text-slate-900">Digital Business</h3>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <h3 className="text-lg font-outfit text-white">Digital Business</h3>
+                  <p className="text-sm text-white mt-1">
                     For online-first brands, creators, SaaS, and e-commerce businesses
                   </p>
                 </div>
-                <div className="pt-2 text-sm text-slate-600">
+                <div className="pt-2 text-sm text-white">
                   <p>✓ Product sync & SKU tagging</p>
                   <p>✓ A/B testing for content</p>
                   <p>✓ UTM tracking & analytics</p>
@@ -84,11 +115,7 @@ export function SignupPage({ onSignup }: SignupPageProps) {
             {/* Physical Business */}
             <button
               onClick={() => handleBusinessTypeSelect('physical')}
-              className={`p-6 rounded-2xl border-2 transition-all text-left hover:shadow-lg ${
-                businessType === 'physical'
-                  ? 'border-blue-500/70 bg-blue-50'
-                  : 'border-slate-200 hover:border-blue-300'
-              }`}
+              className="p-6 rounded-2xl border-2 border-transparent transition-all text-left hover:shadow-lg bg-white/15 hover:border-blue-300"
             >
               <div className="space-y-4">
                 <div className="w-12 h-12 rounded-lg gradient-blue-primary flex items-center justify-center">
@@ -97,12 +124,12 @@ export function SignupPage({ onSignup }: SignupPageProps) {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-outfit text-slate-900">Physical Business</h3>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <h3 className="text-lg font-outfit text-white">Physical Business</h3>
+                  <p className="text-sm text-white mt-1">
                     For cafes, gyms, salons, retail, and local service providers
                   </p>
                 </div>
-                <div className="pt-2 text-sm text-slate-600">
+                <div className="pt-2 text-sm text-white">
                   <p>✓ Local-focused templates</p>
                   <p>✓ Event & promotion tools</p>
                   <p>✓ Multi-location support</p>
@@ -112,11 +139,11 @@ export function SignupPage({ onSignup }: SignupPageProps) {
           </div>
 
           {/* Login Link */}
-          <div className="text-center text-sm pt-4">
-            <span className="text-slate-600">Already have an account? </span>
+          <div className="text-center text-sm flex flex-col">
+            <span className="text-white">Already have an account? </span>
             <button
               onClick={() => navigate('/login')}
-              className="text-blue-600 hover:underline font-medium"
+              className="text-white hover:text-blue-300 hover:underline font-medium"
             >
               Sign in
             </button>
