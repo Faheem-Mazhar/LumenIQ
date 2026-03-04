@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
 import { CalendarView } from '../components/CalendarView';
 import { PostModal } from '../modals/PostModal';
 import { PostDetailModal } from '../modals/PostDetailModal';
 import { PostListModal } from '../modals/PostListModal';
-import { Plus, Calendar, FileText } from 'lucide-react';
+import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine } from 'lucide-react';
 
 interface Post {
   id: string;
@@ -45,7 +46,7 @@ export function CalendarPage() {
         'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop',
         'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop'
       ],
-      caption: 'Team collaboration in action! 💼 Our dedicated team brings innovative solutions to life. #Teamwork #Innovation',
+      caption: 'Team collaboration in action! Our dedicated team brings innovative solutions to life. #Teamwork #Innovation',
       createdDate: new Date(2026, 0, 25),
       scheduledDate: new Date(2026, 1, 5, 9, 0),
       status: 'scheduled'
@@ -53,7 +54,7 @@ export function CalendarPage() {
     {
       id: '5',
       images: ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop'],
-      caption: 'Q1 Planning Session 📊 Setting ambitious goals for the quarter ahead!',
+      caption: 'Q1 Planning Session — Setting ambitious goals for the quarter ahead!',
       createdDate: new Date(2026, 0, 25),
       scheduledDate: new Date(2026, 1, 5, 15, 0),
       status: 'scheduled'
@@ -67,12 +68,6 @@ export function CalendarPage() {
   const [isPostDetailModalOpen, setIsPostDetailModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [listFilter, setListFilter] = useState<'draft' | 'scheduled'>('scheduled');
-
-  const handleDateClick = (date: Date, postsForDate: Post[]) => {
-    setSelectedDate(date);
-    setSelectedPosts(postsForDate);
-    setIsModalOpen(true);
-  };
 
   const handleCreatePost = (date: Date) => {
     setSelectedDate(date);
@@ -93,7 +88,7 @@ export function CalendarPage() {
   };
 
   const handleUpdatePost = (postId: string, updates: Partial<Post>) => {
-    setPosts(posts.map(post => 
+    setPosts(posts.map(post =>
       post.id === postId ? { ...post, ...updates } : post
     ));
   };
@@ -116,75 +111,81 @@ export function CalendarPage() {
   const draftPosts = posts.filter(p => p.status === 'draft');
 
   return (
-    <div className="relative min-h-screen text-slate-900 font-switzer">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
-        <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
-      </div>
-      <div className="mx-auto max-w-[96rem] space-y-8 px-4 pb-16 pt-10">
-        {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-outfit text-slate-900">Content Calendar</h2>
-            <p className="text-slate-600">Plan and schedule your social media content</p>
+    <div className="space-y-6 pb-8 font-switzer max-w-[108rem] mx-auto flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-[26px] font-outfit text-foreground leading-tight">Content Calendar</h1>
+            <p className="text-sm text-muted-foreground">Plan and schedule your social media content</p>
           </div>
-          <Button
-            onClick={() => handleCreatePost(new Date())}
-            className="gradient-blue-primary text-white shadow-sm hover:opacity-90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Post
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleShowList('scheduled')}
+              className="h-8 text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Scheduled ({scheduledPosts.length})
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleShowList('draft')}
+              className="h-8 text-xs gap-1.5 border-border text-muted-foreground hover:text-foreground"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Drafts ({draftPosts.length})
+            </Button>
+            <Button
+              onClick={() => handleCreatePost(new Date())}
+              className="gradient-blue-primary text-white hover:opacity-90 h-8 text-xs gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create Post
+            </Button>
+          </div>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => handleShowList('scheduled')}
-            className="flex items-center gap-2 border-slate-200/70 bg-white/90 text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 hover:text-blue-600"
-          >
-            <Calendar className="w-4 h-4" />
-            Scheduled ({scheduledPosts.length})
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleShowList('draft')}
-            className="flex items-center gap-2 border-slate-200/70 bg-white/90 text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900"
-          >
-            <FileText className="w-4 h-4" />
-            Drafts ({draftPosts.length})
-          </Button>
-        </div>
-
-        {/* Statistics */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
-            <div className="text-sm text-slate-500">Total Posts</div>
-            <div className="mt-2 text-3xl font-outfit text-slate-900">{posts.length}</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
-            <div className="text-sm text-slate-500">Scheduled</div>
-            <div className="mt-2 text-3xl font-outfit text-blue-600">
-              {scheduledPosts.length}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Total Posts</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">{posts.length}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <Layers className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
-          </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
-            <div className="text-sm text-slate-500">Drafts</div>
-            <div className="mt-2 text-3xl font-outfit text-slate-600">
-              {draftPosts.length}
+          </Card>
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Scheduled</p>
+                <p className="text-[28px] leading-none font-outfit text-blue-600">{scheduledPosts.length}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
+                <CalendarDays className="h-5 w-5 text-emerald-600" />
+              </div>
             </div>
-          </div>
+          </Card>
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Drafts</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">{draftPosts.length}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                <PenLine className="h-5 w-5 text-slate-500" />
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Calendar */}
         <CalendarView
           posts={posts}
           onPostClick={handlePostClick}
           onCreatePost={handleCreatePost}
         />
 
-        {/* Post Modal */}
         <PostModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -195,7 +196,6 @@ export function CalendarPage() {
           onDeletePost={handleDeletePost}
         />
 
-        {/* Post Detail Modal */}
         <PostDetailModal
           isOpen={isPostDetailModalOpen}
           onClose={() => setIsPostDetailModalOpen(false)}
@@ -204,7 +204,6 @@ export function CalendarPage() {
           onDeletePost={handleDeletePost}
         />
 
-        {/* Post List Modal */}
         <PostListModal
           isOpen={isListModalOpen}
           onClose={() => setIsListModalOpen(false)}
@@ -213,6 +212,5 @@ export function CalendarPage() {
           onPostClick={handlePostClick}
         />
       </div>
-    </div>
   );
 }
