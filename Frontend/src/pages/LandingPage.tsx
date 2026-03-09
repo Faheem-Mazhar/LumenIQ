@@ -13,6 +13,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQ Logo.png';
+import { useUnicornStudio } from '../utils/useUnicornStudio';
 
 const showcaseStats = [
   { label: 'To your first content plan', value: '< 10 min' },
@@ -90,30 +91,7 @@ export function LandingPage() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  useEffect(() => {
-    const existingScript = document.querySelector('script[data-unicornstudio]');
-    if (existingScript) {
-      window.UnicornStudio?.init();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src =
-      'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.5/dist/unicornStudio.umd.js';
-    script.async = true;
-    script.dataset.unicornstudio = 'true';
-    script.onload = () => {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          window.UnicornStudio?.init();
-        });
-      } else {
-        window.UnicornStudio?.init();
-      }
-    };
-
-    (document.head || document.body).appendChild(script);
-  }, []);
+  useUnicornStudio();
 
   useEffect(() => {
     const handleScroll = () => {
