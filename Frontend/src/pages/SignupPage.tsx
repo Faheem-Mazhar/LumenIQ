@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/whiteLogo.png';
 import { Button } from '../components/ui/button';
 import { ArrowLeftIcon } from 'lucide-react';
+import { useUnicornStudio } from '../utils/useUnicornStudio';
 
 interface SignupPageProps {
   onSignup: () => void;
@@ -13,24 +14,7 @@ export function SignupPage({ onSignup }: SignupPageProps) {
   const navigate = useNavigate();
   const [businessType, setBusinessType] = useState<'digital' | 'physical' | null>(null);
 
-  useEffect(() => {
-    const existingScript = document.querySelector('script[data-unicornstudio]');
-    if (existingScript) {
-      window.UnicornStudio?.init();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src =
-      'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.5/dist/unicornStudio.umd.js';
-    script.async = true;
-    script.dataset.unicornstudio = 'true';
-    script.onload = () => {
-      window.UnicornStudio?.init();
-    };
-
-    (document.head || document.body).appendChild(script);
-  }, []);
+  useUnicornStudio();
 
   const handleBusinessTypeSelect = (type: 'digital' | 'physical') => {
     setBusinessType(type);
