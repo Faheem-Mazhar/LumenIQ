@@ -5,15 +5,6 @@ import logoImage from '../components/photos/whiteLogo.png';
 import { Button } from '../components/ui/button';
 import { ArrowLeftIcon } from 'lucide-react';
 
-declare global {
-  interface Window {
-    UnicornStudio?: {
-      init: () => void;
-    };
-  }
-}
-
-
 interface SignupPageProps {
   onSignup: () => void;
 }

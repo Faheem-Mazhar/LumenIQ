@@ -7,14 +7,6 @@ import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/whiteLogo.png';
 import { ArrowLeftIcon } from 'lucide-react';
 
-declare global {
-  interface Window {
-    UnicornStudio?: {
-      init: () => void;
-    };
-  }
-}
-
 interface LoginPageProps {
   onLogin: (email: string) => void;
 }

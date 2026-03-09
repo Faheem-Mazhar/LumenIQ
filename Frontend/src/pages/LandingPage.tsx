@@ -14,14 +14,6 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQ Logo.png';
 
-declare global {
-  interface Window {
-    UnicornStudio?: {
-      init: () => void;
-    };
-  }
-}
-
 const showcaseStats = [
   { label: 'To your first content plan', value: '< 10 min' },
   { label: 'Saved Every Month', value: '7-10 hours' },
