@@ -6,60 +6,12 @@ import { PostModal } from '../modals/PostModal';
 import { PostDetailModal } from '../modals/PostDetailModal';
 import { PostListModal } from '../modals/PostListModal';
 import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine } from 'lucide-react';
+import { type CalendarPost, MOCK_CALENDAR_POSTS } from '../mockData';
 
-interface Post {
-  id: string;
-  images?: string[];
-  caption: string;
-  createdDate: Date;
-  scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
-}
+type Post = CalendarPost;
 
 export function CalendarPage() {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: '1',
-      images: ['https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop'],
-      caption: 'Excited to share our new product line! Check out these amazing features. #ProductLaunch #Innovation',
-      createdDate: new Date(2026, 0, 20),
-      scheduledDate: new Date(2026, 0, 25, 14, 0),
-      status: 'scheduled'
-    },
-    {
-      id: '2',
-      caption: 'Behind the scenes at our office. Our team is working hard to bring you the best experience! #TeamWork',
-      createdDate: new Date(2026, 0, 22),
-      status: 'draft'
-    },
-    {
-      id: '3',
-      images: ['https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop'],
-      caption: 'Customer success story: How we helped increase engagement by 200%. Read more on our blog! #CaseStudy',
-      createdDate: new Date(2026, 0, 28),
-      scheduledDate: new Date(2026, 0, 30, 10, 0),
-      status: 'scheduled'
-    },
-    {
-      id: '4',
-      images: [
-        'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop'
-      ],
-      caption: 'Team collaboration in action! Our dedicated team brings innovative solutions to life. #Teamwork #Innovation',
-      createdDate: new Date(2026, 0, 25),
-      scheduledDate: new Date(2026, 1, 5, 9, 0),
-      status: 'scheduled'
-    },
-    {
-      id: '5',
-      images: ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop'],
-      caption: 'Q1 Planning Session — Setting ambitious goals for the quarter ahead!',
-      createdDate: new Date(2026, 0, 25),
-      scheduledDate: new Date(2026, 1, 5, 15, 0),
-      status: 'scheduled'
-    }
-  ]);
+  const [posts, setPosts] = useState<Post[]>(MOCK_CALENDAR_POSTS);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());

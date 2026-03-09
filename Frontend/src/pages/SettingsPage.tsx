@@ -20,56 +20,20 @@ import { Skeleton } from '../components/ui/skeleton';
 import { AddBusinessModal } from '../modals/AddBusinessModal';
 import { PlanSelectionModal } from '../modals/PlanSelectionModal';
 import { PaymentMethodModal } from '../modals/PaymentMethodModal';
-
-interface Business {
-  id: string;
-  name: string;
-  description: string;
-  websiteUrl: string;
-  instagramHandle: string;
-  brandColor: string;
-  location: string;
-  isActive: boolean;
-}
+import {
+  type Business,
+  type CurrentPlan,
+  MOCK_CURRENT_PLAN,
+  MOCK_BUSINESSES,
+  MOCK_PERSONAL_INFO,
+  MOCK_NOTIFICATION_DEFAULTS,
+  MOCK_PAYMENT_METHOD,
+} from '../mockData';
 
 export function SettingsPage() {
-  const currentPlan = {
-    name: 'Growth',
-    price: 139,
-    type: 'Digital Business',
-    billingPeriod: 'monthly',
-    maxBrands: 5,
-    features: [
-      'Up to 5 brands',
-      'Unlimited social profiles',
-      'Advanced AI content generation',
-      'Unlimited auto-planners',
-      'Priority support'
-    ]
-  };
+  const currentPlan: CurrentPlan = MOCK_CURRENT_PLAN;
 
-  const [businesses, setBusinesses] = useState<Business[]>([
-    {
-      id: '1',
-      name: 'My Main Business',
-      description: 'A great business doing amazing things',
-      websiteUrl: 'https://mybusiness.com',
-      instagramHandle: '@mybusiness',
-      brandColor: '#3b82f6',
-      location: 'New York, USA',
-      isActive: true
-    },
-    {
-      id: '2',
-      name: 'Secondary Brand',
-      description: 'My second business venture',
-      websiteUrl: 'https://secondbrand.com',
-      instagramHandle: '@secondbrand',
-      brandColor: '#10b981',
-      location: 'Los Angeles, USA',
-      isActive: false
-    }
-  ]);
+  const [businesses, setBusinesses] = useState<Business[]>(MOCK_BUSINESSES);
 
   const [activeBusiness, setActiveBusiness] = useState(businesses[0]);
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
@@ -82,19 +46,9 @@ export function SettingsPage() {
     location: ''
   });
 
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    postReminders: true,
-    weeklyReports: false,
-    aiSuggestions: true
-  });
+  const [notifications, setNotifications] = useState(MOCK_NOTIFICATION_DEFAULTS);
 
-  const [personalInfo, setPersonalInfo] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john@example.com',
-    phone: '+1 (555) 123-4567'
-  });
+  const [personalInfo, setPersonalInfo] = useState(MOCK_PERSONAL_INFO);
 
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
@@ -672,8 +626,8 @@ export function SettingsPage() {
               <div className="flex items-center gap-3 p-4 border border-slate-200 rounded-lg bg-white/90">
                 <CreditCard className="w-8 h-8 text-slate-400" />
                 <div className="flex-1">
-                  <div className=" text-slate-900">•••• •••• •••• 4242</div>
-                  <p className="text-sm text-slate-600">Expires 12/2025</p>
+                  <div className=" text-slate-900">•••• •••• •••• {MOCK_PAYMENT_METHOD.last4}</div>
+                  <p className="text-sm text-slate-600">Expires {MOCK_PAYMENT_METHOD.expiryMonth}/{MOCK_PAYMENT_METHOD.expiryYear}</p>
                 </div>
                 <Button
                   variant="outline"

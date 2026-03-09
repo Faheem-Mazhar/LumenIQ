@@ -4,17 +4,7 @@ import { X, Search, Calendar } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
-
-interface Photo {
-  id: string;
-  title: string;
-  url: string;
-  createdDate: Date;
-  scheduledDate?: Date;
-  isAIGenerated: boolean;
-  tags: string[];
-  usedInPosts: number;
-}
+import { MOCK_PHOTOS } from '../mockData';
 
 interface PhotoSelectorProps {
   onSelectPhoto: (photoUrl: string) => void;
@@ -23,64 +13,8 @@ interface PhotoSelectorProps {
 
 export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Mock photos - in production, this would come from the photo storage
-  const photos: Photo[] = [
-    {
-      id: '1',
-      title: 'Business Team',
-      url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 15),
-      isAIGenerated: true,
-      tags: ['business', 'team', 'office'],
-      usedInPosts: 2
-    },
-    {
-      id: '2',
-      title: 'Collaboration Meeting',
-      url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 18),
-      isAIGenerated: false,
-      tags: ['collaboration', 'meeting'],
-      usedInPosts: 1
-    },
-    {
-      id: '3',
-      title: 'Modern Workspace',
-      url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 20),
-      isAIGenerated: true,
-      tags: ['workspace', 'laptop'],
-      usedInPosts: 0
-    },
-    {
-      id: '4',
-      title: 'Innovation Team',
-      url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 22),
-      isAIGenerated: false,
-      tags: ['innovation', 'technology'],
-      usedInPosts: 1
-    },
-    {
-      id: '5',
-      title: 'Professional Portrait',
-      url: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 24),
-      isAIGenerated: true,
-      tags: ['professional', 'portrait'],
-      usedInPosts: 0
-    },
-    {
-      id: '6',
-      title: 'Team Discussion',
-      url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop',
-      createdDate: new Date(2026, 0, 26),
-      isAIGenerated: false,
-      tags: ['discussion', 'planning'],
-      usedInPosts: 3
-    }
-  ];
+
+  const photos = MOCK_PHOTOS;
 
   const filteredPhotos = photos.filter(photo => {
     if (searchQuery === '') return true;

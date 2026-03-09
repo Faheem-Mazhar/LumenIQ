@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -34,128 +34,32 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 
-type TimeRange = '7D' | '30D' | '90D';
+import {
+  type TimeRange,
+  type PostType,
+  type PostStatus,
+  type ActivityType,
+  MOCK_KPI_DATA,
+  MOCK_AUDIENCE_GROWTH,
+  MOCK_ENGAGEMENT,
+  MOCK_PLATFORMS,
+  MOCK_UPCOMING_POSTS,
+  MOCK_TOP_POSTS,
+  MOCK_ACTIVITY,
+} from '../mockData';
 
-const audienceGrowth7D = [
-  { date: 'Mon', followers: 24120, impressions: 18400 },
-  { date: 'Tue', followers: 24180, impressions: 21200 },
-  { date: 'Wed', followers: 24250, impressions: 19800 },
-  { date: 'Thu', followers: 24310, impressions: 24600 },
-  { date: 'Fri', followers: 24380, impressions: 22100 },
-  { date: 'Sat', followers: 24460, impressions: 26800 },
-  { date: 'Sun', followers: 24521, impressions: 23400 },
-];
+const KPI_DISPLAY_CONFIG: Record<string, { icon: React.ReactNode; accent: string }> = {
+  followers: { icon: <Users className="h-5 w-5 text-blue-600" />, accent: 'bg-blue-50' },
+  impressions: { icon: <Eye className="h-5 w-5 text-violet-600" />, accent: 'bg-violet-50' },
+  engagementRate: { icon: <Heart className="h-5 w-5 text-rose-500" />, accent: 'bg-rose-50' },
+  scheduledPosts: { icon: <CalendarDays className="h-5 w-5 text-emerald-600" />, accent: 'bg-emerald-50' },
+};
 
-const audienceGrowth30D = [
-  { date: 'Week 1', followers: 22800, impressions: 124000 },
-  { date: 'Week 2', followers: 23200, impressions: 138000 },
-  { date: 'Week 3', followers: 23800, impressions: 142000 },
-  { date: 'Week 4', followers: 24521, impressions: 148200 },
-];
-
-const audienceGrowth90D = [
-  { date: 'Jan', followers: 19400, impressions: 98000 },
-  { date: 'Feb', followers: 21200, impressions: 118000 },
-  { date: 'Mar', followers: 24521, impressions: 148200 },
-];
-
-const engagementByDay = [
-  { day: 'Mon', likes: 342, comments: 89, shares: 56, saves: 124 },
-  { day: 'Tue', likes: 456, comments: 102, shares: 78, saves: 156 },
-  { day: 'Wed', likes: 389, comments: 94, shares: 62, saves: 138 },
-  { day: 'Thu', likes: 521, comments: 134, shares: 91, saves: 189 },
-  { day: 'Fri', likes: 478, comments: 118, shares: 84, saves: 167 },
-  { day: 'Sat', likes: 612, comments: 156, shares: 108, saves: 213 },
-  { day: 'Sun', likes: 534, comments: 128, shares: 92, saves: 178 },
-];
-
-const platformData = [
-  { name: 'Instagram', value: 45, color: '#E1306C', followers: '11.2K', growth: '+4.2%' },
-  { name: 'Facebook', value: 25, color: '#1877F2', followers: '6.1K', growth: '+1.8%' },
-  { name: 'X / Twitter', value: 18, color: '#1DA1F2', followers: '4.4K', growth: '+3.1%' },
-  { name: 'LinkedIn', value: 12, color: '#0A66C2', followers: '2.8K', growth: '+6.5%' },
-];
-
-const upcomingPosts = [
-  {
-    id: '1',
-    title: 'Product Launch Teaser',
-    platform: 'Instagram',
-    scheduledTime: 'Today, 2:00 PM',
-    type: 'image' as const,
-    status: 'ready' as const,
-  },
-  {
-    id: '2',
-    title: 'Weekly Tips Thread',
-    platform: 'X / Twitter',
-    scheduledTime: 'Today, 5:30 PM',
-    type: 'text' as const,
-    status: 'ready' as const,
-  },
-  {
-    id: '3',
-    title: 'Behind the Scenes Reel',
-    platform: 'Instagram',
-    scheduledTime: 'Tomorrow, 10:00 AM',
-    type: 'video' as const,
-    status: 'draft' as const,
-  },
-  {
-    id: '4',
-    title: 'Industry Insights Article',
-    platform: 'LinkedIn',
-    scheduledTime: 'Tomorrow, 1:00 PM',
-    type: 'article' as const,
-    status: 'review' as const,
-  },
-];
-
-const topPosts = [
-  {
-    id: '1',
-    title: 'New Collection Drop',
-    platform: 'Instagram',
-    impressions: '12.4K',
-    engagement: '8.2%',
-    likes: 1024,
-    comments: 89,
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=300&fit=crop',
-  },
-  {
-    id: '2',
-    title: 'Customer Success Story',
-    platform: 'LinkedIn',
-    impressions: '8.7K',
-    engagement: '6.4%',
-    likes: 556,
-    comments: 134,
-    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop',
-  },
-  {
-    id: '3',
-    title: 'Team Culture Video',
-    platform: 'Facebook',
-    impressions: '6.2K',
-    engagement: '5.1%',
-    likes: 316,
-    comments: 67,
-    image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=300&fit=crop',
-  },
-];
-
-const recentActivity = [
-  { id: '1', text: 'Instagram post "New Collection" reached 1K impressions', time: '2 min ago', type: 'milestone' as const },
-  { id: '2', text: 'Weekly content plan auto-generated for Mar 10–16', time: '1 hr ago', type: 'ai' as const },
-  { id: '3', text: '"Product Launch Teaser" scheduled for today at 2:00 PM', time: '3 hrs ago', type: 'scheduled' as const },
-  { id: '4', text: 'Engagement rate up 0.8% compared to last week', time: '5 hrs ago', type: 'growth' as const },
-  { id: '5', text: '3 new followers on LinkedIn from Industry Insights post', time: '8 hrs ago', type: 'follower' as const },
-];
-
-const audienceDataMap: Record<TimeRange, typeof audienceGrowth7D> = {
-  '7D': audienceGrowth7D,
-  '30D': audienceGrowth30D,
-  '90D': audienceGrowth90D,
+const POST_TYPE_DISPLAY: Record<PostType, { className: string; icon: React.ReactNode }> = {
+  image: { className: 'bg-pink-50 text-pink-500', icon: <Heart className="h-3.5 w-3.5" /> },
+  video: { className: 'bg-violet-50 text-violet-500', icon: <Eye className="h-3.5 w-3.5" /> },
+  article: { className: 'bg-blue-50 text-blue-500', icon: <FileText className="h-3.5 w-3.5" /> },
+  text: { className: 'bg-slate-50 text-slate-500', icon: <MessageCircle className="h-3.5 w-3.5" /> },
 };
 
 function formatNumber(num: number): string {
@@ -206,7 +110,7 @@ function KpiCard({
   );
 }
 
-function StatusBadge({ status }: { status: 'ready' | 'draft' | 'review' }) {
+function StatusBadge({ status }: { status: PostStatus }) {
   const styles = {
     ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     draft: 'bg-slate-50 text-slate-600 border-slate-200',
@@ -220,7 +124,7 @@ function StatusBadge({ status }: { status: 'ready' | 'draft' | 'review' }) {
   );
 }
 
-function ActivityIcon({ type }: { type: 'milestone' | 'ai' | 'scheduled' | 'growth' | 'follower' }) {
+function ActivityIcon({ type }: { type: ActivityType }) {
   const config = {
     milestone: { bg: 'bg-blue-50', icon: <Target className="h-3.5 w-3.5 text-blue-600" /> },
     ai: { bg: 'bg-violet-50', icon: <Sparkles className="h-3.5 w-3.5 text-violet-600" /> },
@@ -254,7 +158,15 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 export function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('7D');
-  const audienceData = audienceDataMap[timeRange];
+
+  // Data sources — swap these assignments with fetched API data
+  const kpiData = MOCK_KPI_DATA;
+  const audienceData = MOCK_AUDIENCE_GROWTH[timeRange];
+  const engagementData = MOCK_ENGAGEMENT;
+  const platformData = MOCK_PLATFORMS;
+  const upcomingPosts = MOCK_UPCOMING_POSTS;
+  const topPosts = MOCK_TOP_POSTS;
+  const recentActivity = MOCK_ACTIVITY;
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -296,38 +208,20 @@ export function DashboardPage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
-          label="Total Followers"
-          value="24,521"
-          change={12.5}
-          changeLabel="vs last period"
-          icon={<Users className="h-5 w-5 text-blue-600" />}
-          accent="bg-blue-50"
-        />
-        <KpiCard
-          label="Impressions"
-          value="148.2K"
-          change={8.3}
-          changeLabel="vs last period"
-          icon={<Eye className="h-5 w-5 text-violet-600" />}
-          accent="bg-violet-50"
-        />
-        <KpiCard
-          label="Engagement Rate"
-          value="4.7%"
-          change={0.8}
-          changeLabel="vs last period"
-          icon={<Heart className="h-5 w-5 text-rose-500" />}
-          accent="bg-rose-50"
-        />
-        <KpiCard
-          label="Scheduled Posts"
-          value="12"
-          change={-2.1}
-          changeLabel="vs last week"
-          icon={<CalendarDays className="h-5 w-5 text-emerald-600" />}
-          accent="bg-emerald-50"
-        />
+        {kpiData.map((kpi) => {
+          const display = KPI_DISPLAY_CONFIG[kpi.key];
+          return display ? (
+            <KpiCard
+              key={kpi.key}
+              label={kpi.label}
+              value={kpi.value}
+              change={kpi.change}
+              changeLabel={kpi.changeLabel}
+              icon={display.icon}
+              accent={display.accent}
+            />
+          ) : null;
+        })}
       </div>
 
       {/* Main Grid */}
@@ -436,7 +330,7 @@ export function DashboardPage() {
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={engagementByDay} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
+                <BarChart data={engagementData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                   <XAxis
                     dataKey="day"
@@ -602,16 +496,8 @@ export function DashboardPage() {
             <div className="divide-y divide-border/40">
               {upcomingPosts.map((post) => (
                 <div key={post.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                    post.type === 'image' ? 'bg-pink-50 text-pink-500' :
-                    post.type === 'video' ? 'bg-violet-50 text-violet-500' :
-                    post.type === 'article' ? 'bg-blue-50 text-blue-500' :
-                    'bg-slate-50 text-slate-500'
-                  }`}>
-                    {post.type === 'image' && <Heart className="h-3.5 w-3.5" />}
-                    {post.type === 'video' && <Eye className="h-3.5 w-3.5" />}
-                    {post.type === 'article' && <FileText className="h-3.5 w-3.5" />}
-                    {post.type === 'text' && <MessageCircle className="h-3.5 w-3.5" />}
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${POST_TYPE_DISPLAY[post.type].className}`}>
+                    {POST_TYPE_DISPLAY[post.type].icon}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-foreground">{post.title}</p>

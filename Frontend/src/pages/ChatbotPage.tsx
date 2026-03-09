@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Send, Sparkles, Calendar, Image as ImageIcon, TrendingUp } from 'lucide-react';
+import { MOCK_CHATBOT_GREETING, MOCK_CHATBOT_RESPONSES } from '../mockData';
 
 interface Message {
   id: string;
@@ -15,7 +16,7 @@ export function ChatbotPage() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your LumenIQ AI assistant. I can help you create engaging social media content, schedule posts, analyze trends, and manage your social media strategy. What would you like to work on today?',
+      content: MOCK_CHATBOT_GREETING,
       timestamp: new Date()
     }
   ]);
@@ -47,13 +48,7 @@ export function ChatbotPage() {
 
     // Simulate AI response
     setTimeout(() => {
-      const responses = [
-        "I'd be happy to help you create content! What type of post would you like to create? I can generate captions for product launches, behind-the-scenes content, customer testimonials, or promotional posts.",
-        "Great idea! Based on your content strategy, I recommend posting during peak engagement hours. Would you like me to schedule this for you?",
-        "I've analyzed your recent posts and noticed that posts with images get 3x more engagement. Would you like me to help you select images from your photo library?",
-        "That sounds perfect! Let me help you craft a compelling caption. What are the key points you'd like to highlight?",
-        "I can help you with that! To create the best content, could you tell me more about your target audience and the message you want to convey?"
-      ];
+      const responses = MOCK_CHATBOT_RESPONSES;
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

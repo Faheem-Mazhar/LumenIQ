@@ -6,6 +6,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PhotoSelector } from '../components/PhotoSelector';
+import { MOCK_AI_CAPTIONS } from '../mockData';
 
 interface Post {
   id: string;
@@ -130,12 +131,7 @@ export function PostDetailModal({
   const handleGenerateCaption = async () => {
     setIsGeneratingCaption(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    const aiCaptions = [
-      "✨ Embracing new beginnings and endless possibilities! What inspires you today? 💫 #Motivation #Inspiration",
-      "🌟 Creating moments that matter. Join us on this journey! 🚀 #Community #Growth",
-      "💡 Innovation meets creativity. Ready to make an impact? 🎯 #Business #Success",
-      "🎨 Where vision becomes reality. Let's build something amazing together! 🌈 #Creative #Vision"
-    ];
+    const aiCaptions = MOCK_AI_CAPTIONS;
     setCaption(aiCaptions[Math.floor(Math.random() * aiCaptions.length)]);
     setIsGeneratingCaption(false);
   };

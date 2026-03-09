@@ -2,16 +2,7 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Check } from 'lucide-react';
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  price: number;
-  period: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
-}
+import { MOCK_DIGITAL_PLANS, MOCK_PHYSICAL_PLANS } from '../mockData';
 
 interface PricingPlansProps {
   businessType: 'digital' | 'physical';
@@ -20,135 +11,8 @@ interface PricingPlansProps {
 }
 
 export function PricingPlans({ businessType, onSelectPlan, selectedPlan }: PricingPlansProps) {
-  const digitalPlans: PricingPlan[] = [
-    {
-      id: 'digital-solo',
-      name: 'Solo',
-      price: 39,
-      period: 'month',
-      description: 'Ideal for solo founders validating presence',
-      features: [
-        '1 brand',
-        'Up to 6 social profiles',
-        'Product pull (basic)',
-        'Monthly auto-planner',
-        'Tap-to-publish + posting reminders',
-        'Essential analytics (last 90 days)'
-      ]
-    },
-    {
-      id: 'digital-starter',
-      name: 'Starter',
-      price: 79,
-      period: 'month',
-      description: 'Ideal for growing digital brands with light teams',
-      popular: true,
-      features: [
-        '2 brands',
-        'Up to 12 social profiles',
-        'Product sync + SKU tagging',
-        '2 auto-planners per month',
-        'A/B testing for hooks & captions',
-        '6-month analytics history + exports',
-        'Basic approval workflow'
-      ]
-    },
-    {
-      id: 'digital-growth',
-      name: 'Growth',
-      price: 139,
-      period: 'month',
-      description: 'Ideal for scaling digital operations and agencies',
-      features: [
-        '5 brands',
-        'Up to 24 social profiles',
-        'Unified UTM + Google Analytics dashboard',
-        'Seasonal content templates',
-        'Bulk scheduling via CSV',
-        'Asset library (images, templates)',
-        'Review-mining prompts (UGC-inspired content)',
-        '12-month analytics + PDF/CSV exports'
-      ]
-    },
-    {
-      id: 'digital-enterprise',
-      name: 'Enterprise',
-      price: 0,
-      period: 'custom',
-      description: 'Tailored based on business profile and scale',
-      features: [
-        '5+ brands',
-        'Custom feature set',
-        'Custom analytics depth',
-        'Priority support & onboarding',
-        'Dedicated account manager'
-      ]
-    }
-  ];
-
-  const physicalPlans: PricingPlan[] = [
-    {
-      id: 'physical-solo',
-      name: 'Solo',
-      price: 29,
-      period: 'month',
-      description: 'Ideal for single-location operators',
-      features: [
-        '1 brand',
-        'Core scheduling & posting',
-        'Local-focused content templates',
-        'Essential analytics'
-      ]
-    },
-    {
-      id: 'physical-starter',
-      name: 'Starter',
-      price: 59,
-      period: 'month',
-      description: 'Ideal for small teams and busy storefronts',
-      popular: true,
-      features: [
-        '2 brands',
-        'Up to 12 social profiles',
-        '2 auto-planners per month',
-        'Promotion, offer, and event templates',
-        'Basic approval flow',
-        'Activity log',
-        '6-month analytics + exports'
-      ]
-    },
-    {
-      id: 'physical-growth',
-      name: 'Growth',
-      price: 119,
-      period: 'month',
-      description: 'Ideal for multi-location or high-traffic businesses',
-      features: [
-        '5 brands',
-        'Up to 24 social profiles',
-        'Seasonal calendar planning',
-        'Bulk scheduling via CSV',
-        'Asset library',
-        'Localization tokens (menu, hours, location, events)',
-        '12-month analytics + PDF/CSV exports'
-      ]
-    },
-    {
-      id: 'physical-enterprise',
-      name: 'Enterprise',
-      price: 0,
-      period: 'custom',
-      description: 'Tailored per organization',
-      features: [
-        '5+ brands',
-        'Multi-location customization',
-        'Advanced localization logic',
-        'Custom workflows',
-        'Priority support'
-      ]
-    }
-  ];
-
+  const digitalPlans = MOCK_DIGITAL_PLANS;
+  const physicalPlans = MOCK_PHYSICAL_PLANS;
   const plans = businessType === 'digital' ? digitalPlans : physicalPlans;
 
   return (
