@@ -35,13 +35,7 @@ export function SignupPage({ onSignup }: SignupPageProps) {
     script.async = true;
     script.dataset.unicornstudio = 'true';
     script.onload = () => {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          window.UnicornStudio?.init();
-        });
-      } else {
-        window.UnicornStudio?.init();
-      }
+      window.UnicornStudio?.init();
     };
 
     (document.head || document.body).appendChild(script);
