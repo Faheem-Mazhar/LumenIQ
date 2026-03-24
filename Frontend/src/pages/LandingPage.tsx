@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import logoImage from '../components/photos/LumenIQ Logo.png';
+import logoImage from '../components/photos/LumenIQFull.png';
 import { useUnicornStudio } from '../utils/useUnicornStudio';
 
 const showcaseStats = [

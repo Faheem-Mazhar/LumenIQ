@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card } from '../components/ui/card';
-import logoImage from '../components/photos/whiteLogo.png';
+import logoImage from '../components/photos/LumenIQClear.png';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useUnicornStudio } from '../utils/useUnicornStudio';
 

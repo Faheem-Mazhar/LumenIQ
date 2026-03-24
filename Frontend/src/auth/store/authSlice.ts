@@ -9,6 +9,10 @@ interface AuthState {
     email: string;
     firstName?: string;
     lastName?: string;
+    /** Profile photo URL when provided by API */
+    avatarUrl?: string;
+    /** Display label e.g. "Pro", "Starter" */
+    accountPlan?: string;
   } | null;
   token: string | null;
 }

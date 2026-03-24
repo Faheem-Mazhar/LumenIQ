@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
-import logoImage from '../components/photos/whiteLogo.png';
+import logoImage from '../components/photos/LumenIQClear.png';
 import { Button } from '../components/ui/button';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useUnicornStudio } from '../utils/useUnicornStudio';

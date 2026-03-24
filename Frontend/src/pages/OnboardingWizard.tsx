@@ -5,10 +5,10 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { PlanSelectionModal } from '../modals/PlanSelectionModal';
-import logoImage from '../components/photos/LumenIQ Logo.png';
+import logoImage from '../components/photos/LumenIQFull.png';
 import {
   validateEmail,
-  validatePhone,
+  validatePhone,  
   validateName,
   validateRequired,
   validateUrl,

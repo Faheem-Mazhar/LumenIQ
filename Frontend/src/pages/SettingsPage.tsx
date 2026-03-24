@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBusiness } from '../auth/hooks/useBusiness';
 import { 
   User, 
   Bell, 
@@ -24,7 +25,6 @@ import {
   type Business,
   type CurrentPlan,
   MOCK_CURRENT_PLAN,
-  MOCK_BUSINESSES,
   MOCK_PERSONAL_INFO,
   MOCK_NOTIFICATION_DEFAULTS,
   MOCK_PAYMENT_METHOD,
@@ -33,9 +33,14 @@ import {
 export function SettingsPage() {
   const currentPlan: CurrentPlan = MOCK_CURRENT_PLAN;
 
-  const [businesses, setBusinesses] = useState<Business[]>(MOCK_BUSINESSES);
-
-  const [activeBusiness, setActiveBusiness] = useState(businesses[0]);
+  const {
+    businesses,
+    activeBusiness,
+    switchBusiness: switchBusinessById,
+    addBusiness: addBusinessToStore,
+    removeBusiness: removeBusinessFromStore,
+    updateBusinessFields,
+  } = useBusiness();
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [newBusiness, setNewBusiness] = useState<Partial<Business>>({
     name: '',
@@ -64,11 +69,7 @@ export function SettingsPage() {
   const canAddMoreBrands = businesses.length < currentPlan.maxBrands;
 
   const handleSwitchBusiness = (business: Business) => {
-    setBusinesses(businesses.map(b => ({
-      ...b,
-      isActive: b.id === business.id
-    })));
-    setActiveBusiness(business);
+    switchBusinessById(business.id);
   };
 
   const handleAddBusiness = () => {
@@ -85,7 +86,7 @@ export function SettingsPage() {
       isActive: false
     };
 
-    setBusinesses([...businesses, business]);
+    addBusinessToStore(business);
     setNewBusiness({
       name: '',
       description: '',
@@ -103,19 +104,14 @@ export function SettingsPage() {
       return;
     }
     if (window.confirm('Are you sure you want to delete this business?')) {
-      setBusinesses(businesses.filter(b => b.id !== id));
-      if (activeBusiness.id === id) {
-        const newActive = businesses.find(b => b.id !== id)!;
-        setActiveBusiness(newActive);
-      }
+      removeBusinessFromStore(id);
     }
   };
 
   const handleUpdateBusiness = (field: keyof Business, value: string) => {
-    setActiveBusiness({ ...activeBusiness, [field]: value });
-    setBusinesses(businesses.map(b => 
-      b.id === activeBusiness.id ? { ...b, [field]: value } : b
-    ));
+    const b = activeBusiness ?? businesses[0];
+    if (!b) return;
+    updateBusinessFields(b.id, { [field]: value });
   };
 
   const handleSaveBusiness = () => {
@@ -133,6 +129,15 @@ export function SettingsPage() {
       setIsSavingPersonal(false);
     }, 1600);
   };
+
+  const selectedBusiness = activeBusiness ?? businesses[0];
+  if (!selectedBusiness) {
+    return (
+      <div className="mx-auto max-w-[88rem] px-4 pb-16 pt-10">
+        <p className="text-slate-600">No businesses found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen text-slate-900 font-switzer">
@@ -289,7 +294,7 @@ export function SettingsPage() {
           <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
               <h3 className="text-lg font-outfit text-slate-900">
-                {activeBusiness.name} Settings
+                {selectedBusiness.name} Settings
               </h3>
               {!isEditingBusiness && (
                 <Button
@@ -307,7 +312,7 @@ export function SettingsPage() {
                 <Label htmlFor="businessName" className="text-slate-700">Business Name</Label>
                 <Input
                   id="businessName"
-                  value={activeBusiness.name}
+                  value={selectedBusiness.name}
                   onChange={(e) => handleUpdateBusiness('name', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -318,7 +323,7 @@ export function SettingsPage() {
                 <Label htmlFor="businessDescription" className="text-slate-700">Description</Label>
                 <Textarea
                   id="businessDescription"
-                  value={activeBusiness.description}
+                  value={selectedBusiness.description}
                   onChange={(e) => handleUpdateBusiness('description', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="min-h-20 border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -331,7 +336,7 @@ export function SettingsPage() {
                   <Input
                     id="websiteUrl"
                     type="url"
-                    value={activeBusiness.websiteUrl}
+                    value={selectedBusiness.websiteUrl}
                     onChange={(e) => handleUpdateBusiness('websiteUrl', e.target.value)}
                     placeholder="https://example.com"
                     disabled={!isEditingBusiness}
@@ -343,7 +348,7 @@ export function SettingsPage() {
                   <Label htmlFor="instagramHandle" className="text-slate-700">Instagram Handle</Label>
                   <Input
                     id="instagramHandle"
-                    value={activeBusiness.instagramHandle}
+                    value={selectedBusiness.instagramHandle}
                     onChange={(e) => handleUpdateBusiness('instagramHandle', e.target.value)}
                     placeholder="@yourbusiness"
                     disabled={!isEditingBusiness}
@@ -359,13 +364,13 @@ export function SettingsPage() {
                     <Input
                       id="brandColor"
                       type="color"
-                      value={activeBusiness.brandColor}
+                      value={selectedBusiness.brandColor}
                       onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
                       disabled={!isEditingBusiness}
                       className="w-16 h-10 p-1 cursor-pointer border-slate-200 bg-white/90 disabled:cursor-not-allowed"
                     />
                     <Input
-                      value={activeBusiness.brandColor}
+                      value={selectedBusiness.brandColor}
                       onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
                       placeholder="#3b82f6"
                       disabled={!isEditingBusiness}
@@ -378,7 +383,7 @@ export function SettingsPage() {
                   <Label htmlFor="location" className="text-slate-700">Location</Label>
                   <Input
                     id="location"
-                    value={activeBusiness.location}
+                    value={selectedBusiness.location}
                     onChange={(e) => handleUpdateBusiness('location', e.target.value)}
                     placeholder="City, Country"
                     disabled={!isEditingBusiness}
