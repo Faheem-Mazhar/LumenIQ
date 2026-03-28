@@ -209,22 +209,6 @@ function WorkspaceMenuPanel({
           <div className="my-1 h-px bg-slate-700/80" />
         </>
       )}
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-slate-200 hover:bg-slate-800 font-outfit"
-        onClick={onSettings}
-      >
-        <Settings className="h-4 w-4 text-slate-400" />
-        Settings
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-red-400 hover:bg-red-500/10 font-outfit"
-        onClick={onLogout}
-      >
-        <LogOut className="h-4 w-4" />
-        Log out
-      </button>
     </div>
   );
 }
@@ -290,7 +274,7 @@ export function Sidebar({ children }: SidebarProps) {
   };
 
   const handleLogout = () => {
-    navigate('/login');
+    navigate('/');
     setHeaderMenuOpen(false);
   };
 
@@ -451,61 +435,31 @@ export function Sidebar({ children }: SidebarProps) {
 
         {/* Profile + Account */}
         <div className="border-t border-slate-800/80 px-2 pb-2 pt-1">
-          <SidebarUserProfile user={user} collapsed={collapsed} />
-          {!collapsed && (
-            <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 font-outfit">
-              Account
-            </p>
-          )}
-          {collapsed ? (
-            <>
-              <NavButton
-                active={isActive('/app/settings')}
-                label="Settings"
-                onClick={() => handleNavClick('/app/settings')}
-              >
-                <Settings className="w-6 h-6" />
-              </NavButton>
-              <NavButton
-                active={false}
-                label="Help & Support"
-                onClick={() => {
-                  window.location.href = 'mailto:support@lumeniq.com';
-                }}
-              >
-                <HelpCircle className="w-6 h-6" />
-              </NavButton>
-              <div className="mx-auto my-2 h-px w-8 bg-slate-700/80" />
-              <div className="relative group w-full">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="relative w-full flex items-center justify-center h-10 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
-                >
-                  <LogOut className="w-6 h-6" />
-                </button>
-                <Tooltip label="Log out" />
-              </div>
-            </>
-          ) : (
-            <>
-              <ExpandedNavRow
-                active={isActive('/app/settings')}
-                label="Settings"
-                icon={<Settings className="w-[18px] h-[18px]" />}
-                onClick={() => handleNavClick('/app/settings')}
-              />
-              <a
-                href="mailto:support@lumeniq.com"
-                className={cn(
-                  'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium font-outfit transition-colors text-slate-400 hover:text-slate-200 hover:bg-slate-800/50',
-                )}
-              >
-                <HelpCircle className="h-[18px] w-[18px] shrink-0" />
-                <span className="flex-1 truncate">Help & Support</span>
-              </a>
-            </>
-          )}
+        <SidebarUserProfile user={user} collapsed={collapsed} />
+          <p className={cn(!collapsed ? 'px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 font-outfit' : 'hidden')}>
+            Account
+          </p>
+          <ExpandedNavRow
+            active={isActive('/app/settings')}
+            label="Settings"
+            icon={<Settings className="w-[18px] h-[18px]" />}
+            onClick={() => handleNavClick('/app/settings')}
+          />
+          <a
+            href="mailto:support@lumeniq.com"
+            className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium font-outfit transition-colors text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+          >
+            <HelpCircle className="h-[18px] w-[18px] shrink-0" />
+            <span className="flex-1 truncate">Help & Support</span>
+          </a>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/10 font-outfit"
+          >
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
+            <span className="flex-1 truncate">Log out</span>
+          </button>
         </div>
 
         {/* Hide / expand */}
