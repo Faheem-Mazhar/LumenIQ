@@ -209,22 +209,6 @@ function WorkspaceMenuPanel({
           <div className="my-1 h-px bg-slate-700/80" />
         </>
       )}
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-slate-200 hover:bg-slate-800 font-outfit"
-        onClick={onSettings}
-      >
-        <Settings className="h-4 w-4 text-slate-400" />
-        Settings
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-red-400 hover:bg-red-500/10 font-outfit"
-        onClick={onLogout}
-      >
-        <LogOut className="h-4 w-4" />
-        Log out
-      </button>
     </div>
   );
 }
