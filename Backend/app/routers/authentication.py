@@ -94,20 +94,23 @@ async def sign_in_with_google(
     )
 
 
-@router.post("/password-reset")
-async def request_password_reset(
-    request_body: PasswordResetRequest,
-    authentication_service: AuthenticationService = Depends(get_authentication_service),
-):
-    authentication_service.request_password_reset(request_body.email)
-    return {"message": "Password reset email sent if the account exists"}
+# NOTE: /password-reset and /password-update are not wired to any frontend UI yet.
+# Re-enable these routes when the password-management flow is built.
+
+# @router.post("/password-reset")
+# async def request_password_reset(
+#     request_body: PasswordResetRequest,
+#     authentication_service: AuthenticationService = Depends(get_authentication_service),
+# ):
+#     authentication_service.request_password_reset(request_body.email)
+#     return {"message": "Password reset email sent if the account exists"}
 
 
-@router.post("/password-update")
-async def update_password(
-    request_body: PasswordUpdateRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    authentication_service: AuthenticationService = Depends(get_authentication_service),
-):
-    authentication_service.update_password(credentials.credentials, request_body.new_password)
-    return {"message": "Password updated successfully"}
+# @router.post("/password-update")
+# async def update_password(
+#     request_body: PasswordUpdateRequest,
+#     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+#     authentication_service: AuthenticationService = Depends(get_authentication_service),
+# ):
+#     authentication_service.update_password(credentials.credentials, request_body.new_password)
+#     return {"message": "Password updated successfully"}

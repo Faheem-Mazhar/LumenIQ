@@ -80,6 +80,7 @@ function KpiCard({
   changeLabel,
   icon,
   accent,
+  hideChange,
 }: {
   label: string;
   value: string;
@@ -87,6 +88,7 @@ function KpiCard({
   changeLabel: string;
   icon: React.ReactNode;
   accent: string;
+  hideChange?: boolean;
 }) {
   const isPositive = change >= 0;
   return (
@@ -95,17 +97,19 @@ function KpiCard({
         <div className="space-y-3">
           <p className="text-[13px] font-switzer text-muted-foreground tracking-wide">{label}</p>
           <p className="text-[28px] leading-none font-outfit text-foreground">{value}</p>
-          <div className="flex items-center gap-1.5">
-            {isPositive ? (
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-            )}
-            <span className={`text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-              {isPositive ? '+' : ''}{change}%
-            </span>
-            <span className="text-xs text-muted-foreground">{changeLabel}</span>
-          </div>
+          {!hideChange && (
+            <div className="flex items-center gap-1.5">
+              {isPositive ? (
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+              )}
+              <span className={`text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                {isPositive ? '+' : ''}{change}%
+              </span>
+              <span className="text-xs text-muted-foreground">{changeLabel}</span>
+            </div>
+          )}
         </div>
         <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
           {icon}
@@ -187,7 +191,15 @@ function SkeletonCard() {
 
 export function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('7D');
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Per-section loading flags so each section renders as soon as its data
+  // arrives — above-the-fold cards appear first, charts follow shortly after.
+  const [kpiLoading, setKpiLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(true);
+
+  // Keep a single derived flag for components that only need to know
+  // whether anything is still loading.
+  const isLoading = kpiLoading || chartsLoading;
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b) => b.isActive),
@@ -204,35 +216,51 @@ export function DashboardPage() {
 
   const fetchDashboardData = useCallback(async () => {
     if (!businessId) return;
-    setIsLoading(true);
+
+    // ── Wave 1 (immediate): above-the-fold KPI cards + platform badges ──
+    setKpiLoading(true);
+    setChartsLoading(true);
+
+    const [kpis, platforms] = await Promise.allSettled([
+      analyticsApi.getKpis(businessId, timeRange),
+      analyticsApi.getPlatforms(businessId),
+    ]);
+
+    if (kpis.status === 'fulfilled') setKpiData(kpis.value);
+    if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
+    setKpiLoading(false);
+
+    // ── Wave 2 (after Wave 1): charts, top posts, activity, calendar ──
+    const [audience, engagement, top, activity] = await Promise.allSettled([
+      analyticsApi.getAudience(businessId, timeRange),
+      analyticsApi.getEngagement(businessId, timeRange),
+      analyticsApi.getTopPosts(businessId, timeRange),
+      analyticsApi.getActivity(businessId),
+    ]);
+
+    if (audience.status === 'fulfilled') setAudienceData(audience.value);
+    if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
+    if (top.status === 'fulfilled') setTopPosts(top.value);
+    if (activity.status === 'fulfilled') setRecentActivity(activity.value);
+
     try {
-      const [kpis, audience, engagement, platforms, top, activity] = await Promise.allSettled([
-        analyticsApi.getKpis(businessId, timeRange),
-        analyticsApi.getAudience(businessId, timeRange),
-        analyticsApi.getEngagement(businessId, timeRange),
-        analyticsApi.getPlatforms(businessId),
-        analyticsApi.getTopPosts(businessId, timeRange),
-        analyticsApi.getActivity(businessId),
-      ]);
+      const calendarPosts = await calendarApi.listPosts(businessId);
+      const scheduled = calendarPosts.filter(p => p.status === 'scheduled');
 
-      if (kpis.status === 'fulfilled') setKpiData(kpis.value);
-      if (audience.status === 'fulfilled') setAudienceData(audience.value);
-      if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
-      if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
-      if (top.status === 'fulfilled') setTopPosts(top.value);
-      if (activity.status === 'fulfilled') setRecentActivity(activity.value);
+      setUpcomingPosts(scheduled.slice(0, 4).map(mapCalendarPostToUpcoming));
 
-      try {
-        const calendarPosts = await calendarApi.listPosts(businessId, undefined, 'scheduled');
-        setUpcomingPosts(calendarPosts.slice(0, 4).map(mapCalendarPostToUpcoming));
-      } catch {
-        // calendar endpoint may not exist yet
-      }
+      setKpiData(prev =>
+        prev.map(kpi =>
+          kpi.key === 'scheduledPosts'
+            ? { ...kpi, value: scheduled.length.toString() }
+            : kpi,
+        ),
+      );
     } catch {
-      // analytics endpoints may return errors initially
-    } finally {
-      setIsLoading(false);
+      // calendar endpoint may not be populated yet
     }
+
+    setChartsLoading(false);
   }, [businessId, timeRange]);
 
   useEffect(() => {
@@ -296,6 +324,7 @@ export function DashboardPage() {
                   changeLabel={kpi.changeLabel}
                   icon={display.icon}
                   accent={display.accent}
+                  hideChange={kpi.key === 'scheduledPosts'}
                 />
               ) : null;
             })}

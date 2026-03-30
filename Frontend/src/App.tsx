@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from './components/ui/sonner';
 import { store } from './auth/store';
+import { SessionRestorer } from './auth/SessionRestorer';
 import { Sidebar } from './pages/Sidebar';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -25,10 +26,10 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/onboarding" element={<OnboardingWizard />} />
-        
+
         {/* Protected routes */}
-        <Route 
-          path="/app/*" 
+        <Route
+          path="/app/*"
           element={
             isAuthenticated ? (
               needsOnboarding && !hasCompletedOnboarding ? (
@@ -48,13 +49,13 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
 
         {/* Default redirect */}
-        <Route 
-          path="*" 
-          element={<Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />} 
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />}
         />
       </Routes>
     </BrowserRouter>
@@ -64,7 +65,12 @@ function AppContent() {
 export default function App() {
   return (
     <Provider store={store}>
-      <AppContent />
+      {/* SessionRestorer runs once on mount: if tokens exist in localStorage
+          but Redux user is null (page refresh), it re-hydrates profile +
+          businesses before rendering any child routes. */}
+      <SessionRestorer>
+        <AppContent />
+      </SessionRestorer>
       <Toaster />
     </Provider>
   );

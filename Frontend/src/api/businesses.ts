@@ -55,15 +55,12 @@ export const businessApi = {
   list: () =>
     api.get<BusinessSummaryResponse[]>('/businesses/'),
 
-  get: (businessId: string) =>
-    api.get<BusinessResponse>(`/businesses/${businessId}`),
-
   create: (data: BusinessCreate) =>
     api.post<BusinessResponse>('/businesses/', data),
 
   update: (businessId: string, data: BusinessUpdate) =>
     api.patch<BusinessResponse>(`/businesses/${businessId}`, data),
 
-  delete: (businessId: string) =>
-    api.delete(`/businesses/${businessId}`),
+  // get() and delete() removed — corresponding backend routes are disabled.
+  // Re-add when a business detail / deletion UI is built.
 };

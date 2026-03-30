@@ -1,4 +1,14 @@
 import { useState, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle } from 'lucide-react';
@@ -45,6 +55,7 @@ export function PostDetailModal({
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>(post?.images || []);
+  const [confirmAction, setConfirmAction] = useState<null | 'convertToDraft' | 'deletePost'>(null);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b) => b.isActive),
@@ -67,6 +78,10 @@ export function PostDetailModal({
       }
     }
   }, [post]);
+
+  useEffect(() => {
+    if (!isOpen) setConfirmAction(null);
+  }, [isOpen]);
 
   if (!post) return null;
 
@@ -92,11 +107,15 @@ export function PostDetailModal({
   };
 
   const handleSaveDraft = () => {
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const [year, month, day] = scheduledDate.split('-').map(Number);
+    const draftDateTime = new Date(year, month - 1, day, hours, minutes);
+
     onUpdatePost(post.id, {
       caption,
       images: selectedImages.length > 0 ? selectedImages : undefined,
       status: 'draft',
-      scheduledDate: undefined
+      scheduledDate: draftDateTime
     });
     onClose();
   };
@@ -115,21 +134,19 @@ export function PostDetailModal({
     onClose();
   };
 
-  const handleConvertToDraft = () => {
-    if (window.confirm('Convert this scheduled post back to a draft?')) {
-      onUpdatePost(post.id, {
-        status: 'draft',
-        scheduledDate: undefined
-      });
-      onClose();
-    }
-  };
+  const handleConvertToDraftClick = () => setConfirmAction('convertToDraft');
 
-  const handleCancelPost = () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
+  const handleDeletePostClick = () => setConfirmAction('deletePost');
+
+  const executeConfirmAction = () => {
+    if (confirmAction === 'convertToDraft') {
+      onUpdatePost(post.id, { status: 'draft' });
+      onClose();
+    } else if (confirmAction === 'deletePost') {
       onDeletePost(post.id);
       onClose();
     }
+    setConfirmAction(null);
   };
 
   const handleImageSelection = (image: string) => {
@@ -258,6 +275,7 @@ export function PostDetailModal({
                         id="scheduledDate"
                         type="date"
                         value={scheduledDate}
+                        min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => setScheduledDate(e.target.value)}
                         className="bg-input-background"
                       />
@@ -294,13 +312,13 @@ export function PostDetailModal({
               <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   {isScheduled && (
-                    <Button variant="outline" onClick={handleConvertToDraft} className="text-muted-foreground">
+                    <Button variant="outline" onClick={handleConvertToDraftClick} className="text-muted-foreground">
                       Convert to Draft
                     </Button>
                   )}
                   <Button
                     variant="outline"
-                    onClick={handleCancelPost}
+                    onClick={handleDeletePostClick}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -328,6 +346,41 @@ export function PostDetailModal({
               onClose={() => setShowPhotoSelector(false)}
             />
           )}
+
+          <AlertDialog
+            open={confirmAction !== null}
+            onOpenChange={(open: boolean) => {
+              if (!open) setConfirmAction(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {confirmAction === 'convertToDraft'
+                    ? 'Convert to draft?'
+                    : 'Delete this post?'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {confirmAction === 'convertToDraft'
+                    ? 'This scheduled post will return to draft. You can edit and schedule it again.'
+                    : 'This will permanently delete this post. This action cannot be undone.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Back</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={executeConfirmAction}
+                  className={
+                    confirmAction === 'deletePost'
+                      ? 'bg-destructive text-white hover:bg-destructive/90'
+                      : undefined
+                  }
+                >
+                  {confirmAction === 'convertToDraft' ? 'Convert to draft' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </AnimatePresence>

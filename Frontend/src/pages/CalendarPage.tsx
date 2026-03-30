@@ -81,12 +81,16 @@ export function CalendarPage() {
   const handleUpdatePost = async (postId: string, updates: Partial<Post>) => {
     if (!businessId) return;
     try {
-      const updated = await calendarApi.updatePost(businessId, postId, {
-        caption: updates.caption,
-        media: updates.images,
-        scheduled_at: updates.scheduledDate?.toISOString() ?? (updates.scheduledDate === undefined ? null : undefined),
-        status: updates.status,
-      });
+      const payload: Record<string, unknown> = {};
+      if ('caption' in updates) payload.caption = updates.caption;
+      if ('images' in updates) payload.media = updates.images;
+      if ('status' in updates) payload.status = updates.status;
+      if ('scheduledDate' in updates) {
+        payload.scheduled_at = updates.scheduledDate
+          ? updates.scheduledDate.toISOString()
+          : null;
+      }
+      const updated = await calendarApi.updatePost(businessId, postId, payload);
       setPosts(prev =>
         prev.map(post => (post.id === postId ? mapCalendarPostFromAPI(updated) : post)),
       );

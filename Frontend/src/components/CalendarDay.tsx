@@ -14,18 +14,20 @@ interface CalendarDayProps {
   day: number;
   date: Date;
   isToday: boolean;
+  isPast: boolean;
   posts: Post[];
   onPostClick: (post: Post) => void;
   onCreatePost: (date: Date) => void;
 }
 
-export function CalendarDay({ 
-  day, 
-  date, 
-  isToday, 
+export function CalendarDay({
+  day,
+  date,
+  isToday,
+  isPast,
   posts,
   onPostClick,
-  onCreatePost 
+  onCreatePost
 }: CalendarDayProps) {
   
   // Sort posts by scheduled time
@@ -37,13 +39,15 @@ export function CalendarDay({
   
   return (
     <motion.div
-      className={`aspect-square border rounded-lg p-2 relative cursor-pointer transition-all hover:shadow-md overflow-hidden ${
-        isToday
-          ? 'border-primary bg-accent'
-          : 'border-border bg-background'
+      className={`aspect-square border rounded-lg p-2 relative transition-all overflow-hidden ${
+        isPast
+          ? 'border-border bg-muted/40 opacity-50 cursor-default'
+          : isToday
+            ? 'border-primary bg-accent cursor-pointer hover:shadow-md'
+            : 'border-border bg-background cursor-pointer hover:shadow-md'
       }`}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={isPast ? undefined : { scale: 1.02 }}
+      whileTap={isPast ? undefined : { scale: 0.98 }}
     >
       {/* Day number */}
       <div className={`text-sm font-medium mb-1 ${
@@ -146,8 +150,8 @@ export function CalendarDay({
         )}
       </div>
 
-      {/* Add post button (shows on hover) */}
-      {posts.length === 0 && (
+      {/* Add post button (shows on hover, hidden for past dates) */}
+      {posts.length === 0 && !isPast && (
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -21,14 +21,17 @@ async def list_media(
     return media_service.list_media(business_id, limit, offset)
 
 
-@router.get("/{media_id}", response_model=BusinessMedia)
-async def get_media(
-    business_id: str,
-    media_id: str,
-    user_id: str = Depends(get_current_user_id),
-    media_service: MediaService = Depends(get_media_service),
-):
-    return media_service.get_media(media_id)
+# NOTE: GET /{media_id} has no frontend caller — the frontend works from
+# the list. Re-enable when a media-detail view is added.
+
+# @router.get("/{media_id}", response_model=BusinessMedia)
+# async def get_media(
+#     business_id: str,
+#     media_id: str,
+#     user_id: str = Depends(get_current_user_id),
+#     media_service: MediaService = Depends(get_media_service),
+# ):
+#     return media_service.get_media(media_id)
 
 
 @router.post("/upload", response_model=BusinessMedia, status_code=201)
@@ -66,11 +69,14 @@ async def upload_media(
     return media_record
 
 
-@router.delete("/{media_id}", status_code=204)
-async def delete_media(
-    business_id: str,
-    media_id: str,
-    user_id: str = Depends(get_current_user_id),
-    media_service: MediaService = Depends(get_media_service),
-):
-    media_service.delete_media(media_id)
+# NOTE: DELETE /{media_id} has no frontend caller yet.
+# Re-enable when media-deletion UI is added to PhotoStoragePage.
+
+# @router.delete("/{media_id}", status_code=204)
+# async def delete_media(
+#     business_id: str,
+#     media_id: str,
+#     user_id: str = Depends(get_current_user_id),
+#     media_service: MediaService = Depends(get_media_service),
+# ):
+#     media_service.delete_media(media_id)

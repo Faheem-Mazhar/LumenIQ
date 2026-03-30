@@ -28,6 +28,17 @@ import type { Business } from '../auth/store/businessSlice';
 import type { PlanStream } from '../types/plans';
 import type { CurrentPlan, NotificationPreferences, PersonalInfo, PaymentMethod } from '../types';
 import { useAuth } from '../auth/hooks/useAuth';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 const FREE_PLAN: CurrentPlan = {
   name: 'Free',
@@ -116,6 +127,7 @@ export function SettingsPage() {
   const [isSavingPersonal, setIsSavingPersonal] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [businessIdPendingDelete, setBusinessIdPendingDelete] = useState<string | null>(null);
 
   useEffect(() => {
     plansApi.list().then(setPlanStreams).catch(() => {});
@@ -175,12 +187,17 @@ export function SettingsPage() {
 
   const handleDeleteBusiness = (id: string) => {
     if (businesses.length <= 1) {
-      alert('You must have at least one business');
+      toast.error('You must have at least one business');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this business?')) {
-      removeBusinessFromStore(id);
+    setBusinessIdPendingDelete(id);
+  };
+
+  const confirmDeleteBusiness = () => {
+    if (businessIdPendingDelete) {
+      removeBusinessFromStore(businessIdPendingDelete);
     }
+    setBusinessIdPendingDelete(null);
   };
 
   const handleStartEditingBusiness = () => {
@@ -779,6 +796,31 @@ export function SettingsPage() {
           open={isPaymentModalOpen}
           onOpenChange={setIsPaymentModalOpen}
         />
+
+        <AlertDialog
+          open={businessIdPendingDelete !== null}
+          onOpenChange={(open: boolean) => {
+            if (!open) setBusinessIdPendingDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this business?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the business from your account. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteBusiness}
+                className="bg-destructive text-white hover:bg-destructive/90"
+              >
+                Delete business
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

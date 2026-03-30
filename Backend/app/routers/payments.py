@@ -22,13 +22,16 @@ async def list_payment_history(
     return payment_service.list_payments_for_user(user_id)
 
 
-@router.get("/{payment_id}", response_model=Payment)
-async def get_payment(
-    payment_id: str,
-    user_id: str = Depends(get_current_user_id),
-    payment_service: PaymentService = Depends(get_payment_service),
-):
-    return payment_service.get_payment(payment_id)
+# NOTE: GET /{payment_id} has no frontend caller. Re-enable when a
+# payment-detail / receipt page is added.
+
+# @router.get("/{payment_id}", response_model=Payment)
+# async def get_payment(
+#     payment_id: str,
+#     user_id: str = Depends(get_current_user_id),
+#     payment_service: PaymentService = Depends(get_payment_service),
+# ):
+#     return payment_service.get_payment(payment_id)
 
 
 @router.post("/checkout", response_model=CreateCheckoutSessionResponse)

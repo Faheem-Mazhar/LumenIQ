@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { persistSession, loadSession, clearSession } from '../sessionStorage';
+import { cacheClear } from '../../api/cache';
 
 interface AuthUser {
   id: string;
@@ -19,13 +21,17 @@ interface AuthState {
   refreshToken: string | null;
 }
 
+// Rehydrate tokens from localStorage at module load time.
+// user/business data is hydrated later by <SessionRestorer>.
+const persistedSession = loadSession();
+
 const initialState: AuthState = {
-  isAuthenticated: false,
+  isAuthenticated: persistedSession !== null,
   needsOnboarding: false,
   hasCompletedOnboarding: false,
   user: null,
-  token: null,
-  refreshToken: null,
+  token: persistedSession?.token ?? null,
+  refreshToken: persistedSession?.refreshToken ?? null,
 };
 
 export const authSlice = createSlice({
@@ -50,6 +56,7 @@ export const authSlice = createSlice({
       };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken ?? null;
+      persistSession(action.payload.token, action.payload.refreshToken ?? '');
     },
     signup: (
       state,
@@ -70,6 +77,7 @@ export const authSlice = createSlice({
       };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken ?? null;
+      persistSession(action.payload.token, action.payload.refreshToken ?? '');
     },
     setTokens: (
       state,
@@ -77,6 +85,8 @@ export const authSlice = createSlice({
     ) => {
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
+      // Keep localStorage in sync so the new tokens survive a page refresh
+      persistSession(action.payload.token, action.payload.refreshToken);
     },
     setUser: (state, action: PayloadAction<AuthUser>) => {
       state.user = action.payload;
@@ -92,6 +102,8 @@ export const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.refreshToken = null;
+      clearSession();
+      cacheClear();
     },
     updateUser: (state, action: PayloadAction<Partial<AuthUser>>) => {
       if (state.user) {

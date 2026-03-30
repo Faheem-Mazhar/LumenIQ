@@ -1,6 +1,7 @@
 import logging
-from datetime import date
+from datetime import date, timedelta, datetime
 
+from postgrest.exceptions import APIError
 from supabase import Client
 
 from app.database.supabase_admin import get_supabase_admin_client
@@ -11,7 +12,7 @@ from app.models.calendar import (
     CalendarPostUpdate,
     PublishAttempt,
 )
-from app.core.exceptions import NotFoundError, ExternalServiceError
+from app.core.exceptions import NotFoundError, ExternalServiceError, ValidationError
 from app.services.storage_utils import resolve_media_urls
 
 logger = logging.getLogger("lumeniq.calendar")
@@ -24,6 +25,42 @@ class CalendarService:
         self.calendar_table = "content_calendar_weekly_view"
         self.posts_table = "calendar_posts"
         self.attempts_table = "publish_attempts"
+
+    def _get_or_create_weekly_calendar(
+        self, business_id: str, scheduled_at: datetime | None = None
+    ) -> str:
+        """Return the UUID of the content_calendar_weekly_view row that covers
+        the week containing ``scheduled_at`` (defaults to the current week).
+
+        The calendar_posts table requires content_calendar_id NOT NULL, so every
+        post must belong to a weekly calendar row. This method finds the existing
+        row or creates one automatically so the frontend never has to know about
+        this FK.
+        """
+        target_date = scheduled_at.date() if scheduled_at else date.today()
+        # ISO week starts on Monday
+        week_start = target_date - timedelta(days=target_date.weekday())
+
+        try:
+            response = (
+                self.admin_client.table(self.calendar_table)
+                .select("id")
+                .eq("business_id", business_id)
+                .eq("week_start_date", week_start.isoformat())
+                .execute()
+            )
+            if response.data:
+                return response.data[0]["id"]
+
+            # No row for this week yet — create one
+            insert_response = (
+                self.admin_client.table(self.calendar_table)
+                .insert({"business_id": business_id, "week_start_date": week_start.isoformat()})
+                .execute()
+            )
+            return insert_response.data[0]["id"]
+        except Exception as error:
+            raise ExternalServiceError("Supabase", str(error)) from error
 
     def _resolve_post_media(self, post: CalendarPost) -> CalendarPost:
         if post.media:
@@ -98,7 +135,16 @@ class CalendarService:
 
     def create_calendar_post(self, business_id: str, post_data: CalendarPostCreate) -> CalendarPost:
         try:
-            insert_data = {"business_id": business_id, **post_data.model_dump(exclude_none=True)}
+            insert_data = {"business_id": business_id, **post_data.model_dump(mode="json", exclude_none=True)}
+
+            # calendar_posts.content_calendar_id is NOT NULL in the schema.
+            # If the caller didn't supply one, resolve the correct weekly calendar
+            # row automatically so the frontend never needs to manage this FK.
+            if "content_calendar_id" not in insert_data:
+                insert_data["content_calendar_id"] = self._get_or_create_weekly_calendar(
+                    business_id, post_data.scheduled_at
+                )
+
             logger.debug("Inserting calendar post: %s", insert_data)
             response = (
                 self.admin_client.table(self.posts_table)
@@ -106,13 +152,26 @@ class CalendarService:
                 .execute()
             )
             return self._resolve_post_media(CalendarPost(**response.data[0]))
+        except ExternalServiceError:
+            raise
+        except APIError as error:
+            logger.error(
+                "Supabase API error creating post: code=%s message=%s details=%s hint=%s",
+                error.code, error.message, error.details, error.hint,
+            )
+            if error.code in ("23514", "23502", "23505", "22P02"):
+                raise ValidationError(
+                    error.message or f"Database constraint error: {error.details}"
+                ) from error
+            raise ExternalServiceError("Supabase", str(error)) from error
         except Exception as error:
             logger.error("Failed to create calendar post: %s", error)
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def update_calendar_post(self, post_id: str, updates: CalendarPostUpdate) -> CalendarPost:
         try:
-            update_data = updates.model_dump(exclude_unset=True)
+            update_data = updates.model_dump(mode="json", exclude_unset=True)
+            logger.debug("Updating calendar post %s: %s", post_id, update_data)
             response = (
                 self.admin_client.table(self.posts_table)
                 .update(update_data)
@@ -124,6 +183,18 @@ class CalendarService:
             return self._resolve_post_media(CalendarPost(**response.data[0]))
         except NotFoundError:
             raise
+        except APIError as error:
+            logger.error(
+                "Supabase API error updating post %s: code=%s message=%s details=%s hint=%s",
+                post_id, error.code, error.message, error.details, error.hint,
+            )
+            # Check constraint violations (23514) and other client errors
+            # should surface as 422, not 502
+            if error.code in ("23514", "23502", "23505", "22P02"):
+                raise ValidationError(
+                    error.message or f"Database constraint error: {error.details}"
+                ) from error
+            raise ExternalServiceError("Supabase", str(error)) from error
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 

@@ -1,4 +1,14 @@
 import { useState, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2 } from 'lucide-react';
@@ -44,6 +54,7 @@ export function PostModal({
   const [isCreatingNew, setIsCreatingNew] = useState(posts.length === 0);
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>(selectedPost?.images || []);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b) => b.isActive),
@@ -73,6 +84,10 @@ export function PostModal({
     setScheduledDate(selectedDate.toISOString().split('T')[0]);
   }, [selectedDate]);
 
+  useEffect(() => {
+    if (!isOpen) setConfirmCancelOpen(false);
+  }, [isOpen]);
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
@@ -83,11 +98,16 @@ export function PostModal({
   };
 
   const handleSaveAsDraft = () => {
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const draftDateTime = new Date(scheduledDate + 'T00:00:00');
+    draftDateTime.setHours(hours, minutes);
+
     if (isCreatingNew) {
       onSavePost({
         caption,
         images: selectedImages.length > 0 ? selectedImages : undefined,
         createdDate: new Date(),
+        scheduledDate: draftDateTime,
         status: 'draft'
       });
     } else if (selectedPost) {
@@ -95,7 +115,7 @@ export function PostModal({
         caption,
         images: selectedImages.length > 0 ? selectedImages : undefined,
         status: 'draft',
-        scheduledDate: undefined
+        scheduledDate: draftDateTime
       });
     }
     onClose();
@@ -128,18 +148,22 @@ export function PostModal({
   const handleConvertToDraft = () => {
     if (selectedPost && selectedPost.status === 'scheduled') {
       onUpdatePost(selectedPost.id, {
-        status: 'draft',
-        scheduledDate: undefined
+        status: 'draft'
       });
-      setSelectedPost({ ...selectedPost, status: 'draft', scheduledDate: undefined });
+      setSelectedPost({ ...selectedPost, status: 'draft' });
     }
   };
 
-  const handleCancelPost = () => {
-    if (selectedPost && window.confirm('Are you sure you want to cancel this post?')) {
+  const handleCancelPostClick = () => {
+    if (selectedPost) setConfirmCancelOpen(true);
+  };
+
+  const confirmCancelPost = () => {
+    if (selectedPost) {
       onDeletePost(selectedPost.id);
       onClose();
     }
+    setConfirmCancelOpen(false);
   };
 
   const handleImageSelection = (image: string) => {
@@ -260,6 +284,7 @@ export function PostModal({
                       id="scheduledDate"
                       type="date"
                       value={scheduledDate}
+                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setScheduledDate(e.target.value)}
                       className="bg-input-background"
                     />
@@ -304,7 +329,7 @@ export function PostModal({
                 <div className="flex items-center gap-2">
                   {selectedPost?.status === 'scheduled' && (
                     <>
-                      <Button variant="outline" onClick={handleCancelPost} className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30">
+                      <Button variant="outline" onClick={handleCancelPostClick} className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Cancel Post
                       </Button>
@@ -330,6 +355,26 @@ export function PostModal({
               onClose={() => setShowPhotoSelector(false)}
             />
           )}
+
+          <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel this post?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the scheduled post. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep post</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmCancelPost}
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                >
+                  Remove post
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </AnimatePresence>

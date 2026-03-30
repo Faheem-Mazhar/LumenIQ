@@ -2,7 +2,7 @@ from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.core.exceptions import UnauthorizedError
-from app.database.supabase_admin import get_supabase_admin_client
+from app.core.security import decode_token, extract_user_id_from_token
 
 bearer_scheme = HTTPBearer()
 
@@ -10,42 +10,32 @@ bearer_scheme = HTTPBearer()
 async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> str:
-    """Extracts and validates the user ID from the Supabase JWT in the Authorization header.
-    Returns the authenticated user's UUID string.
-    """
-    token = credentials.credentials
-    admin_client = get_supabase_admin_client()
+    """Validates the Supabase JWT locally (no outbound network call) and returns
+    the authenticated user's UUID from the ``sub`` claim.
 
+    Local verification is cryptographically equivalent to calling
+    admin_client.auth.get_user() but is instantaneous and does not depend on
+    Supabase being reachable. JWT_SECRET_KEY in .env must match the project's
+    JWT secret from Supabase Dashboard → Settings → API → JWT Settings.
+    """
     try:
-        user_response = admin_client.auth.get_user(token)
-        if user_response is None or user_response.user is None:
-            raise UnauthorizedError("Could not validate user from token")
-        return str(user_response.user.id)
-    except Exception as error:
+        return extract_user_id_from_token(credentials.credentials)
+    except ValueError as error:
         raise UnauthorizedError(f"Token validation failed: {error}") from error
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> dict:
-    """Extracts the full user object from the Supabase JWT.
-    Returns a dictionary with user id, email, and metadata.
+    """Decodes the Supabase JWT locally and returns id + email + metadata.
+    Falls back gracefully if optional claims are absent.
     """
-    token = credentials.credentials
-    admin_client = get_supabase_admin_client()
-
     try:
-        user_response = admin_client.auth.get_user(token)
-        if user_response is None or user_response.user is None:
-            raise UnauthorizedError("Could not validate user from token")
-
-        user = user_response.user
+        payload = decode_token(credentials.credentials)
         return {
-            "id": str(user.id),
-            "email": user.email,
-            "user_metadata": user.user_metadata or {},
+            "id": str(payload.get("sub", "")),
+            "email": payload.get("email", ""),
+            "user_metadata": payload.get("user_metadata", {}),
         }
-    except UnauthorizedError:
-        raise
-    except Exception as error:
+    except ValueError as error:
         raise UnauthorizedError(f"Token validation failed: {error}") from error

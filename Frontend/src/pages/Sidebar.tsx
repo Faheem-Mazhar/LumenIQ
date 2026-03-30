@@ -253,7 +253,7 @@ export function Sidebar({ children }: SidebarProps) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { businesses, activeBusiness, switchBusiness } = useBusiness();
   const planLabel = user?.accountPlan ?? '';
   const multiBusiness = businesses.length > 1;
@@ -271,9 +271,10 @@ export function Sidebar({ children }: SidebarProps) {
     setIsMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
     setHeaderMenuOpen(false);
+    await logout();
+    navigate('/');
   };
 
   const openSettingsFromMenu = () => {

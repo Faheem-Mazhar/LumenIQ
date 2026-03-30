@@ -69,6 +69,13 @@ export function CalendarView({ posts, onPostClick, onCreatePost }: CalendarViewP
     );
   };
 
+  const isPast = (day: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    return date < today;
+  };
+
   const daysInMonth = getDaysInMonth(currentDate);
   const firstDay = getFirstDayOfMonth(currentDate);
   const calendarDays = [];
@@ -136,6 +143,7 @@ export function CalendarView({ posts, onPostClick, onCreatePost }: CalendarViewP
               key={day}
               day={day}
               isToday={isToday(day)}
+              isPast={isPast(day)}
               posts={postsForDate}
               date={date}
               onPostClick={onPostClick}
