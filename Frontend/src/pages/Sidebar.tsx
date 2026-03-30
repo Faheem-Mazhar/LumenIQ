@@ -292,8 +292,6 @@ export function Sidebar({ children }: SidebarProps) {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const displayName = formatDisplayName(user?.email);
-
   useEffect(() => {
     if (!headerMenuOpen) return;
     const handler = (e: MouseEvent) => {

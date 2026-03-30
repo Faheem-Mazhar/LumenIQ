@@ -23,6 +23,7 @@ class CalendarPostBase(BaseModel):
 class CalendarPostCreate(CalendarPostBase):
     content_calendar_id: str | None = None
     scheduled_at: datetime | None = None
+    status: ScheduledPostStatus = ScheduledPostStatus.DRAFT
     media: list[str] = []
     """media is a list of public URLs pointing to uploaded images/videos."""
 

@@ -3,8 +3,8 @@ import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { CalendarView } from '../components/CalendarView';
-import { PostModal } from '../modals/PostModal';
-import { PostDetailModal } from '../modals/PostDetailModal';
+import { PostModal } from '../modals/PostCreationModal';
+import { PostDetailModal } from '../modals/ViewPostModal';
 import { PostListModal } from '../modals/PostListModal';
 import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine, Loader2 } from 'lucide-react';
 import type { RootState } from '../auth/store';
@@ -64,7 +64,8 @@ export function CalendarPage() {
         status: postData.status || 'draft',
       });
       setPosts(prev => [...prev, mapCalendarPostFromAPI(created)]);
-    } catch {
+    } catch (err) {
+      console.error('Failed to create calendar post:', err);
       const newPost: Post = {
         id: Date.now().toString(),
         caption: postData.caption || '',
@@ -89,7 +90,8 @@ export function CalendarPage() {
       setPosts(prev =>
         prev.map(post => (post.id === postId ? mapCalendarPostFromAPI(updated) : post)),
       );
-    } catch {
+    } catch (err) {
+      console.error('Failed to update calendar post:', err);
       setPosts(prev =>
         prev.map(post => (post.id === postId ? { ...post, ...updates } : post)),
       );
@@ -100,8 +102,8 @@ export function CalendarPage() {
     if (!businessId) return;
     try {
       await calendarApi.deletePost(businessId, postId);
-    } catch {
-      // fall through to optimistic removal
+    } catch (err) {
+      console.error('Failed to delete calendar post:', err);
     }
     setPosts(prev => prev.filter(post => post.id !== postId));
   };

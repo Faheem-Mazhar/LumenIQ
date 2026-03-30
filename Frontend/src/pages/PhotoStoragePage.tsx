@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Upload,
   Search,
@@ -16,10 +16,15 @@ import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import type { Photo } from '../types/photo';
+import { FileUploadModal } from '../modals/FileUploadModal';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../auth/store';
+import { mediaApi, mapMediaToPhoto } from '../api/media';
+import { toast } from 'sonner';
 
 export function PhotoStoragePage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
-
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'ai' | 'uploaded'>('all');
@@ -27,6 +32,25 @@ export function PhotoStoragePage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('12:00');
+
+  const activeBusiness = useSelector((state: RootState) =>
+    state.business.businesses.find((b: { isActive: boolean }) => b.isActive),
+  );
+  const businessId = activeBusiness?.id;
+
+  const fetchMedia = useCallback(async () => {
+    if (!businessId) return;
+    try {
+      const data = await mediaApi.list(businessId);
+      setPhotos(data.map(mapMediaToPhoto));
+    } catch {
+      toast.error('Failed to load media');
+    }
+  }, [businessId]);
+
+  useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
 
   const filteredPhotos = photos.filter(photo => {
     const matchesSearch = photo.tags.some(tag =>
@@ -63,6 +87,16 @@ export function PhotoStoragePage() {
     setSelectedPhoto(null);
   };
 
+  const handleUpload = async (file: File) => {
+    if (!businessId) {
+      toast.error('No active business selected');
+      return;
+    }
+    const response = await mediaApi.upload(businessId, file);
+    const newPhoto = mapMediaToPhoto(response);
+    setPhotos((prev) => [newPhoto, ...prev]);
+  };
+
   const filterOptions: { key: typeof filterType; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'ai', label: 'AI Generated' },
@@ -77,7 +111,7 @@ export function PhotoStoragePage() {
           <h1 className="text-[26px] font-outfit text-foreground leading-tight">Photo Storage</h1>
           <p className="text-sm text-muted-foreground">Manage your media library</p>
         </div>
-        <Button className="gradient-blue-primary text-white hover:opacity-90 h-8 text-xs gap-1.5">
+        <Button className="gradient-blue-primary text-white hover:opacity-90 h-8 text-xs gap-1.5" onClick={() => setIsUploadModalOpen(true)}>
           <Upload className="h-3.5 w-3.5" />
           Upload Photos
         </Button>
@@ -436,6 +470,13 @@ export function PhotoStoragePage() {
           </div>
         </div>
       )}
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        open={isUploadModalOpen}
+        onOpenChange={setIsUploadModalOpen}
+        onUpload={handleUpload}
+      />
     </div>
   );
 }

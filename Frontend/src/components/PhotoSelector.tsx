@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Calendar } from 'lucide-react';
 import { Input } from './ui/input';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../auth/store';
-import { mediaApi } from '../api/media';
+import { mediaApi, mapMediaToPhoto } from '../api/media';
 import type { Photo } from '../types/photo';
 
 interface PhotoSelectorProps {
@@ -20,13 +20,13 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
     state.business.businesses.find((b: { isActive: boolean }) => b.isActive),
   );
 
-  useState(() => {
+  useEffect(() => {
     if (activeBusiness?.id) {
-      mediaApi.list(activeBusiness.id).then((data: unknown) => {
-        if (Array.isArray(data)) setPhotos(data as Photo[]);
+      mediaApi.list(activeBusiness.id).then((data) => {
+        if (Array.isArray(data)) setPhotos(data.map(mapMediaToPhoto));
       }).catch(() => {});
     }
-  });
+  }, [activeBusiness?.id]);
 
   const filteredPhotos = photos.filter(photo => {
     if (searchQuery === '') return true;

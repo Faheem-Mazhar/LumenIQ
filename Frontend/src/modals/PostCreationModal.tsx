@@ -39,9 +39,9 @@ export function PostModal({
 }: PostModalProps) {
   const [selectedPost, setSelectedPost] = useState<Post | null>(posts[0] || null);
   const [caption, setCaption] = useState(selectedPost?.caption || '');
+  const [scheduledDate, setScheduledDate] = useState(selectedDate.toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState('12:00');
   const [isCreatingNew, setIsCreatingNew] = useState(posts.length === 0);
-  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>(selectedPost?.images || []);
 
@@ -55,6 +55,12 @@ export function PostModal({
       setCaption(posts[0].caption);
       setSelectedImages(posts[0].images || []);
       setIsCreatingNew(false);
+      if (posts[0].scheduledDate) {
+        setScheduledDate(posts[0].scheduledDate.toISOString().split('T')[0]);
+        const h = String(posts[0].scheduledDate.getHours()).padStart(2, '0');
+        const m = String(posts[0].scheduledDate.getMinutes()).padStart(2, '0');
+        setScheduledTime(`${h}:${m}`);
+      }
     } else {
       setSelectedPost(null);
       setCaption('');
@@ -62,6 +68,10 @@ export function PostModal({
       setIsCreatingNew(true);
     }
   }, [posts]);
+
+  useEffect(() => {
+    setScheduledDate(selectedDate.toISOString().split('T')[0]);
+  }, [selectedDate]);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -93,7 +103,7 @@ export function PostModal({
 
   const handleSchedulePost = () => {
     const [hours, minutes] = scheduledTime.split(':').map(Number);
-    const scheduledDateTime = new Date(selectedDate);
+    const scheduledDateTime = new Date(scheduledDate + 'T00:00:00');
     scheduledDateTime.setHours(hours, minutes);
 
     if (isCreatingNew) {
@@ -169,7 +179,7 @@ export function PostModal({
                     {isCreatingNew ? 'Create Post' : 'Edit Post'}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {formatDate(selectedDate)}
+                    {formatDate(new Date(scheduledDate + 'T00:00:00'))}
                   </p>
                 </div>
                 <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -244,11 +254,15 @@ export function PostModal({
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
-                      Created Date
+                      Schedule Date
                     </Label>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedPost ? formatDate(selectedPost.createdDate) : formatDate(new Date())}
-                    </div>
+                    <Input
+                      id="scheduledDate"
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="bg-input-background"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="scheduledTime" className="flex items-center gap-2">
@@ -278,6 +292,15 @@ export function PostModal({
               </div>
 
               <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
+              <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Created Date
+                  </Label>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedPost ? formatDate(selectedPost.createdDate) : formatDate(new Date())}
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   {selectedPost?.status === 'scheduled' && (
                     <>

@@ -23,6 +23,7 @@ import { PlanSelectionModal } from '../modals/PlanSelectionModal';
 import { PaymentMethodModal } from '../modals/PaymentMethodModal';
 import { plansApi } from '../api/plans';
 import { authApi } from '../api/auth';
+import { businessApi, mapBusinessToFrontend } from '../api/businesses';
 import type { Business } from '../auth/store/businessSlice';
 import type { PlanStream } from '../types/plans';
 import type { CurrentPlan, NotificationPreferences, PersonalInfo, PaymentMethod } from '../types';
@@ -108,6 +109,7 @@ export function SettingsPage() {
 
   const [paymentMethod] = useState<PaymentMethod | null>(null);
 
+  const [editingBusinessInfo, setEditingBusinessInfo] = useState<Partial<Business>>({});
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [isSavingBusiness, setIsSavingBusiness] = useState(false);
@@ -181,18 +183,43 @@ export function SettingsPage() {
     }
   };
 
-  const handleUpdateBusiness = (field: keyof Business, value: string) => {
+  const handleStartEditingBusiness = () => {
     const b = activeBusiness ?? businesses[0];
     if (!b) return;
-    updateBusinessFields(b.id, { [field]: value });
+    setEditingBusinessInfo({
+      name: b.name,
+      description: b.description,
+      websiteUrl: b.websiteUrl,
+      instagramHandle: b.instagramHandle,
+      location: b.location,
+    });
+    setIsEditingBusiness(true);
   };
 
-  const handleSaveBusiness = () => {
+  const handleUpdateBusinessField = (field: keyof Business, value: string) => {
+    setEditingBusinessInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBusiness = async () => {
+    const b = activeBusiness ?? businesses[0];
+    if (!b) return;
     setIsEditingBusiness(false);
     setIsSavingBusiness(true);
-    window.setTimeout(() => {
+    try {
+      const response = await businessApi.update(b.id, {
+        name: editingBusinessInfo.name ?? b.name,
+        description: editingBusinessInfo.description ?? b.description,
+        website_url: editingBusinessInfo.websiteUrl ?? b.websiteUrl,
+        instagram_handle: editingBusinessInfo.instagramHandle ?? b.instagramHandle,
+        target_location: editingBusinessInfo.location ?? b.location,
+      });
+      const mapped = mapBusinessToFrontend(response);
+      updateBusinessFields(b.id, mapped);
+    } catch {
+      setEditingBusinessInfo({});
+    } finally {
       setIsSavingBusiness(false);
-    }, 1600);
+    }
   };
 
   const handleSavePersonal = async () => {
@@ -395,7 +422,7 @@ export function SettingsPage() {
                   variant="outline"
                   size="sm"
                   className="border-slate-200 text-slate-700 hover:bg-slate-50"
-                  onClick={() => setIsEditingBusiness(true)}
+                  onClick={handleStartEditingBusiness}
                 >
                   Edit
                 </Button>
@@ -406,8 +433,8 @@ export function SettingsPage() {
                 <Label htmlFor="businessName" className="text-slate-700">Business Name</Label>
                 <Input
                   id="businessName"
-                  value={selectedBusiness.name}
-                  onChange={(e) => handleUpdateBusiness('name', e.target.value)}
+                  value={isEditingBusiness ? (editingBusinessInfo.name ?? '') : selectedBusiness.name}
+                  onChange={(e) => handleUpdateBusinessField('name', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
@@ -417,8 +444,8 @@ export function SettingsPage() {
                 <Label htmlFor="businessDescription" className="text-slate-700">Description</Label>
                 <Textarea
                   id="businessDescription"
-                  value={selectedBusiness.description}
-                  onChange={(e) => handleUpdateBusiness('description', e.target.value)}
+                  value={isEditingBusiness ? (editingBusinessInfo.description ?? '') : selectedBusiness.description}
+                  onChange={(e) => handleUpdateBusinessField('description', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="min-h-20 border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
@@ -430,8 +457,8 @@ export function SettingsPage() {
                   <Input
                     id="websiteUrl"
                     type="url"
-                    value={selectedBusiness.websiteUrl}
-                    onChange={(e) => handleUpdateBusiness('websiteUrl', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.websiteUrl ?? '') : selectedBusiness.websiteUrl}
+                    onChange={(e) => handleUpdateBusinessField('websiteUrl', e.target.value)}
                     placeholder="https://example.com"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -442,8 +469,8 @@ export function SettingsPage() {
                   <Label htmlFor="instagramHandle" className="text-slate-700">Instagram Handle</Label>
                   <Input
                     id="instagramHandle"
-                    value={selectedBusiness.instagramHandle}
-                    onChange={(e) => handleUpdateBusiness('instagramHandle', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.instagramHandle ?? '') : selectedBusiness.instagramHandle}
+                    onChange={(e) => handleUpdateBusinessField('instagramHandle', e.target.value)}
                     placeholder="@yourbusiness"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -456,8 +483,8 @@ export function SettingsPage() {
                   <Label htmlFor="location" className="text-slate-700">Location</Label>
                   <Input
                     id="location"
-                    value={selectedBusiness.location}
-                    onChange={(e) => handleUpdateBusiness('location', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.location ?? '') : selectedBusiness.location}
+                    onChange={(e) => handleUpdateBusinessField('location', e.target.value)}
                     placeholder="City, Country"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"

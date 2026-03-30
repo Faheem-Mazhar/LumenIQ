@@ -1,6 +1,20 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+# Fields stored in `profile_json` rather than top-level table columns.
+PROFILE_JSON_FIELDS: frozenset[str] = frozenset(
+    {
+        "website_url",
+        "ideal_customer",
+        "description",
+        "brand_color",
+        "b2b_or_b2c",
+        "target_location",
+        "products_services",
+        "industry_niche",
+    }
+)
 
 
 class BusinessBase(BaseModel):

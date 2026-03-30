@@ -12,7 +12,6 @@ PLAN_CATALOG: list[PlanStream] = [
                 price_label="$39/mo",
                 features=[
                     "1 brand",
-                    "up to 6 social profiles",
                     "product pull (basic)",
                     "monthly auto-planner",
                     "tap-to-publish + reminders",
@@ -25,11 +24,10 @@ PLAN_CATALOG: list[PlanStream] = [
                 price_label="$79/mo",
                 features=[
                     "2 brands",
-                    "up to 12 profiles",
                     "product sync + SKU tags",
                     "2 auto-planners/mo",
                     "A/B hooks & captions",
-                    "6-month analytics + exports",
+                    "3-month analytics + exports",
                     "basic approvals",
                 ],
             ),
@@ -39,7 +37,6 @@ PLAN_CATALOG: list[PlanStream] = [
                 price_label="$139/mo",
                 features=[
                     "5 brands",
-                    "up to 24 profiles",
                     "UTM/GA merge dashboard",
                     "seasonal templates",
                     "bulk scheduling (CSV)",
@@ -73,11 +70,10 @@ PLAN_CATALOG: list[PlanStream] = [
                 price_label="$59/mo",
                 features=[
                     "2 brands",
-                    "up to 12 profiles",
                     "2 auto-planners/mo",
                     "promo/offer & event templates",
                     "basic approvals & activity log",
-                    "6-month analytics + exports",
+                    "3-month analytics + exports",
                 ],
             ),
             PlanOption(
@@ -86,7 +82,6 @@ PLAN_CATALOG: list[PlanStream] = [
                 price_label="$119/mo",
                 features=[
                     "5 brands",
-                    "up to 24 profiles",
                     "seasonal calendars",
                     "bulk scheduling (CSV)",
                     "asset library",

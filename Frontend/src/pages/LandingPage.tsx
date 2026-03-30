@@ -104,7 +104,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white/10 text-slate-900 no-scrollbar">
+    <div className="min-h-screen text-slate-900 no-scrollbar">
       <div className="relative text-white">
         <div className="pointer-events-none fixed inset-0 -z-10">
           <div

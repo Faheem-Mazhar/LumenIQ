@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from supabase import Client
@@ -11,6 +12,9 @@ from app.models.calendar import (
     PublishAttempt,
 )
 from app.core.exceptions import NotFoundError, ExternalServiceError
+from app.services.storage_utils import resolve_media_urls
+
+logger = logging.getLogger("lumeniq.calendar")
 
 
 class CalendarService:
@@ -20,6 +24,11 @@ class CalendarService:
         self.calendar_table = "content_calendar_weekly_view"
         self.posts_table = "calendar_posts"
         self.attempts_table = "publish_attempts"
+
+    def _resolve_post_media(self, post: CalendarPost) -> CalendarPost:
+        if post.media:
+            post.media = resolve_media_urls(self.admin_client, post.media)
+        return post
 
     def list_weekly_calendars(
         self, business_id: str, week_start: date | None = None
@@ -68,7 +77,7 @@ class CalendarService:
                 query = query.eq("status", status)
 
             response = query.order("scheduled_at", desc=False).execute()
-            return [CalendarPost(**row) for row in response.data]
+            return [self._resolve_post_media(CalendarPost(**row)) for row in response.data]
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 
@@ -81,7 +90,7 @@ class CalendarService:
                 .single()
                 .execute()
             )
-            return CalendarPost(**response.data)
+            return self._resolve_post_media(CalendarPost(**response.data))
         except Exception as error:
             if "No rows found" in str(error) or "0 rows" in str(error):
                 raise NotFoundError("Calendar post", post_id) from error
@@ -90,18 +99,20 @@ class CalendarService:
     def create_calendar_post(self, business_id: str, post_data: CalendarPostCreate) -> CalendarPost:
         try:
             insert_data = {"business_id": business_id, **post_data.model_dump(exclude_none=True)}
+            logger.debug("Inserting calendar post: %s", insert_data)
             response = (
                 self.admin_client.table(self.posts_table)
                 .insert(insert_data)
                 .execute()
             )
-            return CalendarPost(**response.data[0])
+            return self._resolve_post_media(CalendarPost(**response.data[0]))
         except Exception as error:
+            logger.error("Failed to create calendar post: %s", error)
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def update_calendar_post(self, post_id: str, updates: CalendarPostUpdate) -> CalendarPost:
         try:
-            update_data = updates.model_dump(exclude_none=True)
+            update_data = updates.model_dump(exclude_unset=True)
             response = (
                 self.admin_client.table(self.posts_table)
                 .update(update_data)
@@ -110,7 +121,7 @@ class CalendarService:
             )
             if not response.data:
                 raise NotFoundError("Calendar post", post_id)
-            return CalendarPost(**response.data[0])
+            return self._resolve_post_media(CalendarPost(**response.data[0]))
         except NotFoundError:
             raise
         except Exception as error:

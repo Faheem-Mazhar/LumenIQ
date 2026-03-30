@@ -1,24 +1,65 @@
 import { api } from './client';
+import { store } from '../auth/store';
+import { logout } from '../auth/store/authSlice';
+import type { Photo } from '../types/photo';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+export interface BusinessMediaResponse {
+  id: string;
+  business_id: string;
+  file_url: string;
+  file_name: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  tags: string[];
+  created_at: string | null;
+}
+
+export function mapMediaToPhoto(media: BusinessMediaResponse): Photo {
+  return {
+    id: media.id,
+    title: media.file_name ?? 'Untitled',
+    url: media.file_url,
+    createdDate: media.created_at ? new Date(media.created_at) : new Date(),
+    isAIGenerated: false,
+    tags: media.tags ?? [],
+    usedInPosts: 0,
+  };
+}
 
 export const mediaApi = {
   list: (businessId: string) =>
-    api.get(`/businesses/${businessId}/media`),
+    api.get<BusinessMediaResponse[]>(`/businesses/${businessId}/media`),
 
-  upload: async (businessId: string, file: File) => {
+  upload: async (businessId: string, file: File): Promise<BusinessMediaResponse> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = (await import('../auth/store')).store.getState().auth.token;
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const token = store.getState().auth.token;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-    const response = await fetch(`${baseUrl}/businesses/${businessId}/media`, {
+    const response = await fetch(`${API_BASE_URL}/businesses/${businessId}/media/upload`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers,
       body: formData,
     });
 
+    if (response.status === 401) {
+      store.dispatch(logout());
+      throw new Error('Session expired. Please sign in again.');
+    }
+
     if (!response.ok) {
-      throw new Error('Upload failed');
+      let detail = 'Upload failed';
+      try {
+        const body = await response.json();
+        detail = body.detail || detail;
+      } catch { /* response wasn't JSON */ }
+      throw new Error(detail);
     }
 
     return response.json();
