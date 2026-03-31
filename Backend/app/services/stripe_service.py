@@ -15,7 +15,7 @@ class StripeService:
         self.user_service = get_user_service()
         self.payment_service = get_payment_service()
 
-    def create_checkout_session(self, user_id: str, price_id: str, success_url: str, cancel_url: str) -> dict:
+    def create_checkout_session(self, user_id: str, plan_id: str, success_url: str, cancel_url: str) -> dict:
         try:
             profile = self.user_service.get_profile(user_id)
             customer_id = profile.stripe_customer_id
@@ -29,22 +29,125 @@ class StripeService:
                     UserProfileUpdate(stripe_customer_id=customer_id),  # type: ignore[call-arg]
                 )
 
+            from app.services.plan_service import get_plan_service
+            plan_service = get_plan_service()
+            plan_catalog = plan_service.list_plans()
+            
+            target_plan = None
+            for stream in plan_catalog:
+                for p in stream.plans:
+                    if p.id == plan_id:
+                        target_plan = p
+                        break
+                if target_plan:
+                    break
+            
+            if not target_plan:
+                raise NotFoundError("Plan", plan_id)
+
+            # E.g. price_label = "$39/mo" -> parse to 3900 cents
+            price_str = target_plan.price_label.replace('$', '').replace('/mo', '').strip()
+            if price_str.lower() == 'custom':
+                unit_amount = 0
+            else:
+                unit_amount = int(float(price_str) * 100)
+
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
-                line_items=[{"price": price_id, "quantity": 1}],
+                line_items=[{
+                    "price_data": {
+                        "currency": "cad",
+                        "product_data": {
+                            "name": f"LumenIQ {target_plan.name}",
+                        },
+                        "unit_amount": unit_amount,
+                        "recurring": {"interval": "month"}
+                    },
+                    "quantity": 1
+                }],
                 mode="subscription",
                 success_url=success_url,
                 cancel_url=cancel_url,
-                metadata={"user_id": user_id},
+                metadata={"user_id": user_id, "plan_id": plan_id},
             )
 
             return {
                 "checkout_session_id": session.id,
                 "checkout_url": session.url,
             }
+        except stripe.error.StripeError as e:
+            raise ExternalServiceError("Stripe", str(e)) from e
         except NotFoundError:
             raise
+        except Exception as error:
+            raise ExternalServiceError("Stripe", str(error)) from error
+
+    def verify_checkout_session(self, user_id: str, session_id: str) -> dict:
+        try:
+            session = stripe.checkout.Session.retrieve(
+                session_id,
+                expand=["payment_intent", "subscription", "line_items"]
+            )
+
+            if session.payment_status != "paid":
+                return {"success": False, "plan_id": None}
+
+            plan_id = getattr(session.metadata, "plan_id", None) if session.metadata else None
+
+
+            try:
+                payment_intent_id = ""
+                if session.payment_intent:
+                    if isinstance(session.payment_intent, str):
+                        payment_intent_id = session.payment_intent
+                    else:
+                        payment_intent_id = getattr(session.payment_intent, "id", "")
+                        
+
+                if not payment_intent_id:
+                    invoice = getattr(session, "invoice", None)
+                    if invoice:
+                        payment_intent_id = invoice if isinstance(invoice, str) else getattr(invoice, "id", "")
+                    
+
+                if not payment_intent_id:
+                    payment_intent_id = session.id
+
+                subscription_id = None
+                if session.subscription:
+                    if isinstance(session.subscription, str):
+                        subscription_id = session.subscription
+                    else:
+                        subscription_id = getattr(session.subscription, "id", None)
+
+
+                if plan_id:
+                    admin_client = self.user_service.admin_client
+                    admin_client.table("profiles").update({"plan": plan_id}).eq("user_id", user_id).execute()
+
+
+                existing = self.payment_service.admin_client.table("payments").select("id").eq("stripe_payment_intent_id", payment_intent_id).execute()
+                if not existing.data:
+                    from app.models.payment import PaymentCreate
+                    self.payment_service.record_payment(
+                        user_id=user_id,
+                        payment_data=PaymentCreate(
+                            stripe_payment_intent_id=payment_intent_id,
+                            stripe_subscription_id=subscription_id,
+                            amount=session.amount_total or 0,
+                            currency=session.currency or "cad",
+                            status="paid",
+                            metadata={"checkout_session_id": session.id},
+                            plan=plan_id
+                        ),
+                    )
+            except Exception as e:
+                print(f"Error recording verified payment: {e}")
+
+            return {"success": True, "plan_id": plan_id}
+        except stripe.error.StripeError as e:
+            raise ExternalServiceError("Stripe", str(e)) from e
         except Exception as error:
             raise ExternalServiceError("Stripe", str(error)) from error
 
@@ -116,7 +219,7 @@ class StripeService:
         subscription_id = invoice_data.get("subscription")
         payment_intent_id = invoice_data.get("payment_intent", "unknown")
 
-        from app.models.user import UserProfileUpdate
+
         try:
             admin_client = self.user_service.admin_client
             response = (
@@ -160,7 +263,7 @@ class StripeService:
             )
             user_id = response.data["user_id"]
 
-            from app.models.user import UserProfileUpdate
+
             admin_client.table("profiles").update({"plan": plan_name}).eq("user_id", user_id).execute()
         except Exception:
             pass

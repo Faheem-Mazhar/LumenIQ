@@ -14,7 +14,7 @@ export interface PaymentMethod {
 }
 
 export interface CreateCheckoutSessionRequest {
-  price_id: string;
+  plan_id: string;
   success_url: string;
   cancel_url: string;
 }
@@ -26,4 +26,13 @@ export interface CreateCheckoutSessionResponse {
 
 export interface CustomerPortalResponse {
   portal_url: string;
+}
+
+export interface VerifyCheckoutSessionRequest {
+  session_id: string;
+}
+
+export interface VerifyCheckoutSessionResponse {
+  success: boolean;
+  plan_id: string | null;
 }

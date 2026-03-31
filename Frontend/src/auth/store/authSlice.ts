@@ -34,9 +34,29 @@ const initialState: AuthState = {
   refreshToken: persistedSession?.refreshToken ?? null,
 };
 
+const loadInitialState = (): AuthState => {
+  try {
+    const serialized = localStorage.getItem('lumen-iq-auth');
+    if (serialized) {
+      return { ...initialState, ...JSON.parse(serialized) };
+    }
+  } catch (err) {
+    console.error('Failed to load auth state', err);
+  }
+  return initialState;
+};
+
+const saveState = (state: AuthState) => {
+  try {
+    localStorage.setItem('lumen-iq-auth', JSON.stringify(state));
+  } catch (err) {
+    console.error('Failed to save auth state', err);
+  }
+};
+
 export const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: loadInitialState(),
   reducers: {
     login: (
       state,
@@ -56,6 +76,7 @@ export const authSlice = createSlice({
       };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken ?? null;
+      saveState(state);
       persistSession(action.payload.token, action.payload.refreshToken ?? '');
     },
     signup: (
@@ -77,6 +98,7 @@ export const authSlice = createSlice({
       };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken ?? null;
+      saveState(state);
       persistSession(action.payload.token, action.payload.refreshToken ?? '');
     },
     setTokens: (
@@ -85,15 +107,18 @@ export const authSlice = createSlice({
     ) => {
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
+      saveState(state);
       // Keep localStorage in sync so the new tokens survive a page refresh
       persistSession(action.payload.token, action.payload.refreshToken);
     },
     setUser: (state, action: PayloadAction<AuthUser>) => {
       state.user = action.payload;
+      saveState(state);
     },
     completeOnboarding: (state) => {
       state.hasCompletedOnboarding = true;
       state.needsOnboarding = false;
+      saveState(state);
     },
     logout: (state) => {
       state.isAuthenticated = false;
@@ -102,12 +127,14 @@ export const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.refreshToken = null;
+      saveState(state);
       clearSession();
       cacheClear();
     },
     updateUser: (state, action: PayloadAction<Partial<AuthUser>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
+        saveState(state);
       }
     },
   },

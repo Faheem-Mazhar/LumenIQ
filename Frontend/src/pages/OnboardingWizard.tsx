@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { onboardingApi } from '../api/onboarding';
 import { plansApi } from '../api/plans';
+import { paymentsApi } from '../api/payments';
 import { useAuth } from '../auth/hooks/useAuth';
 import type { PlanStream } from '../types/plans';
 
@@ -96,12 +97,19 @@ export function OnboardingWizard() {
   const { user, signup: authSignup, completeOnboarding, updateUser, fetchProfileAndBusinesses } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stepParam = params.get('step');
+    return stepParam && parseInt(stepParam) >= 1 && parseInt(stepParam) <= 5 ? parseInt(stepParam) : 1;
+  });
   const [direction, setDirection] = useState(1);
   const totalSteps = 5;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planStreams, setPlanStreams] = useState<PlanStream[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [paymentVerificationFailed, setPaymentVerificationFailed] = useState(false);
+  const hasVerifiedRef = useRef(false);
 
   const navState = location.state as {
     businessType?: 'digital' | 'physical';
@@ -127,6 +135,31 @@ export function OnboardingWizard() {
   useEffect(() => {
     plansApi.list().then(setPlanStreams).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (step === 5 && !hasVerifiedRef.current) {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+      if (sessionId) {
+        hasVerifiedRef.current = true;
+        setIsVerifyingPayment(true);
+        paymentsApi.verifyCheckout({ session_id: sessionId })
+          .then((res) => {
+            if (!res.success) {
+              setPaymentVerificationFailed(true);
+              toast.error("Payment verification failed. Please check your account.");
+            }
+          })
+          .catch(() => {
+            setPaymentVerificationFailed(true);
+            toast.error("An error occurred while verifying the payment.");
+          })
+          .finally(() => {
+            setIsVerifyingPayment(false);
+          });
+      }
+    }
+  }, [step]);
 
   const filteredPlanStreams = useMemo(
     () => planStreams.filter(s => s.id === data.businessType),
@@ -201,9 +234,10 @@ export function OnboardingWizard() {
     return errorKeys.length === 0;
   };
 
-  const handleFinish = async () => {
+  const handleCheckoutFlow = async () => {
     setIsSubmitting(true);
     try {
+
       if (isSignupMode) {
         await authSignup(navState!.email!, navState!.password!);
       }
@@ -230,27 +264,40 @@ export function OnboardingWizard() {
       });
 
       completeOnboarding();
-      updateUser({ firstName: data.firstName, lastName: data.lastName });
+      if (data.firstName || data.lastName) {
+        updateUser({ firstName: data.firstName, lastName: data.lastName });
+      }
       await fetchProfileAndBusinesses('');
 
-      toast.success('Welcome to LumenIQ — let\'s build your first week.');
-      navigate('/app/dashboard', { replace: true });
+
+      const { checkout_url } = await paymentsApi.createCheckout({
+        plan_id: data.selectedPlan || 'digital-solo',
+        success_url: `${window.location.origin}/onboarding?step=5&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${window.location.origin}/onboarding?step=4`,
+      });
+      
+      window.location.href = checkout_url;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to complete setup';
       toast.error(message);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleNext = async () => {
+    if (step === 5) {
+
+      navigate('/app/dashboard', { replace: true });
+      return;
+    }
+
     if (!validateStep()) return;
 
-    if (step < totalSteps) {
+    if (step < 4) {
       setDirection(1);
       setStep(s => s + 1);
-    } else {
-      await handleFinish();
+    } else if (step === 4) {
+      await handleCheckoutFlow();
     }
   };
 
@@ -603,6 +650,37 @@ export function OnboardingWizard() {
         );
 
       case 5:
+        if (isVerifyingPayment) {
+          return (
+            <motion.div
+              key="phase-5-verifying"
+              className="flex flex-col items-center justify-center space-y-6 pt-16"
+            >
+              <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+              <h2 className="text-xl font-medium text-slate-800">Verifying your payment...</h2>
+              <p className="text-slate-500">Please wait while we confirm your subscription.</p>
+            </motion.div>
+          );
+        }
+
+        if (paymentVerificationFailed) {
+          return (
+            <motion.div
+              key="phase-5-failed"
+              className="flex flex-col items-center justify-center space-y-6 pt-16 text-center shadow-sm p-8 rounded-2xl bg-white border border-red-100"
+            >
+              <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                <span className="text-red-600 text-3xl">!</span>
+              </div>
+              <h2 className="text-xl font-medium text-slate-800">Payment Unsuccessful</h2>
+              <p className="text-slate-500 max-w-sm">We couldn't verify your payment. Your card may have been declined or the process was interrupted.</p>
+              <Button onClick={() => setStep(4)} variant="outline" className="mt-4 border-red-200 text-red-600 hover:bg-red-50">
+                Go back to Plans
+              </Button>
+            </motion.div>
+          );
+        }
+
         return (
           <motion.div
             key="phase-5"
@@ -631,14 +709,14 @@ export function OnboardingWizard() {
 
             <div className="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100">
               {[
-                { label: 'Business', value: data.businessName || '—' },
+                { label: 'Name', value: data.firstName || user?.firstName || '—' },
+                { label: 'Business', value: data.businessName || 'Your Business' },
                 { label: 'Type', value: data.businessType === 'digital' ? 'Digital' : 'Physical' },
-                { label: 'Plan', value: planLabelFromStreams(planStreams, data.selectedPlan) || '—' },
-                { label: 'Location', value: data.targetLocation || 'Not specified' },
+                { label: 'Plan', value: planLabelFromStreams(planStreams, data.selectedPlan) || 'Subscribed' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between px-6 py-4">
-                  <span className="text-sm text-slate-500 uppercase tracking-wide">{row.label}</span>
-                  <span className="text-base font-medium text-slate-900">{row.value}</span>
+                   <span className="text-sm text-slate-500 uppercase tracking-wide">{row.label}</span>
+                   <span className="text-base font-medium text-slate-900">{row.value}</span>
                 </div>
               ))}
             </div>

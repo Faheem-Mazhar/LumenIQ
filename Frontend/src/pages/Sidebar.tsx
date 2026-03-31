@@ -379,7 +379,7 @@ export function Sidebar({ children }: SidebarProps) {
                       <img src={logoIcon} alt="" className="h-8 w-8 object-contain" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0].name}</p>
+                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0]?.name ?? 'LumenIQ'}</p>
                       <p className="text-[12px] text-slate-500 font-outfit">{planLabel}</p>
                     </div>
                   </>
@@ -571,7 +571,7 @@ export function Sidebar({ children }: SidebarProps) {
                       <img src={logoIcon} alt="" className="h-6 w-6 object-contain" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0].name}</p>
+                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0]?.name ?? 'LumenIQ'}</p>
                       <p className="text-[12px] text-slate-500 font-outfit">{planLabel}</p>
                     </div>
                   </div>
