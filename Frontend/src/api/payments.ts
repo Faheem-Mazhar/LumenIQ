@@ -3,6 +3,8 @@ import type {
   CreateCheckoutSessionRequest,
   CreateCheckoutSessionResponse,
   CustomerPortalResponse,
+  VerifyCheckoutSessionRequest,
+  VerifyCheckoutSessionResponse,
 } from '../types/payment';
 
 export const paymentsApi = {
@@ -14,4 +16,7 @@ export const paymentsApi = {
 
   getHistory: () =>
     api.get('/payments/history'),
+
+  verifyCheckout: (data: VerifyCheckoutSessionRequest) =>
+    api.post<VerifyCheckoutSessionResponse>('/payments/verify', data),
 };

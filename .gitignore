@@ -26,3 +26,8 @@ dist-ssr
 # Backend
 Backend/.env
 Frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

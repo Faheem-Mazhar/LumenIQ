@@ -31,7 +31,7 @@ class Payment(BaseModel):
 
 
 class CreateCheckoutSessionRequest(BaseModel):
-    price_id: str
+    plan_id: str
     success_url: str
     cancel_url: str
 
@@ -47,3 +47,12 @@ class CustomerPortalRequest(BaseModel):
 
 class CustomerPortalResponse(BaseModel):
     portal_url: str
+
+
+class VerifyCheckoutSessionRequest(BaseModel):
+    session_id: str
+
+
+class VerifyCheckoutSessionResponse(BaseModel):
+    success: bool
+    plan_id: str | None = None

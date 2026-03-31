@@ -6,6 +6,8 @@ from app.models.payment import (
     CreateCheckoutSessionResponse,
     CustomerPortalRequest,
     CustomerPortalResponse,
+    VerifyCheckoutSessionRequest,
+    VerifyCheckoutSessionResponse,
 )
 from app.services.payment_service import PaymentService, get_payment_service
 from app.services.stripe_service import StripeService, get_stripe_service
@@ -39,11 +41,24 @@ async def create_checkout_session(
 ):
     result = stripe_service.create_checkout_session(
         user_id=user_id,
-        price_id=request_body.price_id,
+        plan_id=request_body.plan_id,
         success_url=request_body.success_url,
         cancel_url=request_body.cancel_url,
     )
     return CreateCheckoutSessionResponse(**result)
+
+
+@router.post("/verify", response_model=VerifyCheckoutSessionResponse)
+async def verify_checkout_session(
+    request_body: VerifyCheckoutSessionRequest,
+    user_id: str = Depends(get_current_user_id),
+    stripe_service: StripeService = Depends(get_stripe_service),
+):
+    result = stripe_service.verify_checkout_session(
+        user_id=user_id,
+        session_id=request_body.session_id,
+    )
+    return VerifyCheckoutSessionResponse(**result)
 
 
 @router.post("/customer-portal", response_model=CustomerPortalResponse)
