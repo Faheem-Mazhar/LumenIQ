@@ -1,31 +1,5 @@
-import time
-import logging
-
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 from fastapi import FastAPI
-
-logger = logging.getLogger("lumeniq.requests")
-
-
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
-        start_time = time.perf_counter()
-
-        response = await call_next(request)
-
-        elapsed_milliseconds = (time.perf_counter() - start_time) * 1000
-        logger.info(
-            "%s %s → %d (%.1fms)",
-            request.method,
-            request.url.path,
-            response.status_code,
-            elapsed_milliseconds,
-        )
-
-        return response
 
 
 def configure_request_logging(application: FastAPI) -> None:
-    application.add_middleware(RequestLoggingMiddleware)
+    pass

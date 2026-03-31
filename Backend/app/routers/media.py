@@ -1,4 +1,3 @@
-import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query, UploadFile, File
@@ -6,7 +5,6 @@ from app.models.media import BusinessMedia, BusinessMediaCreate
 from app.services.media_service import MediaService, get_media_service
 from app.dependencies.authentication import get_current_user_id
 
-logger = logging.getLogger("lumeniq.media")
 router = APIRouter(prefix="/businesses/{business_id}/media", tags=["Media"])
 
 
@@ -41,11 +39,6 @@ async def upload_media(
     user_id: str = Depends(get_current_user_id),
     media_service: MediaService = Depends(get_media_service),
 ):
-    logger.info(
-        "Upload request: business=%s, filename=%s, content_type=%s, user=%s",
-        business_id, file.filename, file.content_type, user_id,
-    )
-
     file_bytes = await file.read()
     file_extension = file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "bin"
     storage_file_name = f"{uuid.uuid4()}.{file_extension}"

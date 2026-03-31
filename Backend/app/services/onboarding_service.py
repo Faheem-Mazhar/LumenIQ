@@ -1,12 +1,8 @@
-import logging
-
 from app.models.onboarding import OnboardingRequest, OnboardingResponse
 from app.models.user import UserProfileUpdate
 from app.models.business import BusinessCreate
 from app.services.user_service import UserService, get_user_service
 from app.services.business_service import BusinessService, get_business_service
-
-logger = logging.getLogger(__name__)
 
 
 class OnboardingService:

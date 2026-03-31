@@ -1,13 +1,9 @@
-import logging
-
 from supabase import Client
 
 from app.database.supabase_admin import get_supabase_admin_client
 from app.models.media import BusinessMedia, BusinessMediaCreate
 from app.core.exceptions import NotFoundError, ExternalServiceError
 from app.services.storage_utils import resolve_signed_url, BUCKET_NAME
-
-logger = logging.getLogger("lumeniq.media")
 
 
 class MediaService:
@@ -74,17 +70,13 @@ class MediaService:
         """Uploads a file to Supabase Storage and returns the public URL."""
         try:
             storage_path = f"{business_id}/{file_path}"
-            logger.info("Uploading %s (%d bytes, %s) to bucket '%s'", storage_path, len(file_bytes), content_type, BUCKET_NAME)
             self.admin_client.storage.from_(BUCKET_NAME).upload(
                 storage_path,
                 file_bytes,
                 file_options={"content-type": content_type},
             )
-            public_url_response = self.admin_client.storage.from_(BUCKET_NAME).get_public_url(storage_path)
-            logger.info("Upload successful: %s", public_url_response)
-            return public_url_response
+            return self.admin_client.storage.from_(BUCKET_NAME).get_public_url(storage_path)
         except Exception as error:
-            logger.error("Supabase Storage upload failed: %s", error, exc_info=True)
             raise ExternalServiceError("Supabase Storage", str(error)) from error
 
 

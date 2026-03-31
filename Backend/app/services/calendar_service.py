@@ -1,4 +1,3 @@
-import logging
 from datetime import date, timedelta, datetime
 
 from postgrest.exceptions import APIError
@@ -14,8 +13,6 @@ from app.models.calendar import (
 )
 from app.core.exceptions import NotFoundError, ExternalServiceError, ValidationError
 from app.services.storage_utils import resolve_media_urls
-
-logger = logging.getLogger("lumeniq.calendar")
 
 
 class CalendarService:
@@ -145,7 +142,6 @@ class CalendarService:
                     business_id, post_data.scheduled_at
                 )
 
-            logger.debug("Inserting calendar post: %s", insert_data)
             response = (
                 self.admin_client.table(self.posts_table)
                 .insert(insert_data)
@@ -155,23 +151,17 @@ class CalendarService:
         except ExternalServiceError:
             raise
         except APIError as error:
-            logger.error(
-                "Supabase API error creating post: code=%s message=%s details=%s hint=%s",
-                error.code, error.message, error.details, error.hint,
-            )
             if error.code in ("23514", "23502", "23505", "22P02"):
                 raise ValidationError(
                     error.message or f"Database constraint error: {error.details}"
                 ) from error
             raise ExternalServiceError("Supabase", str(error)) from error
         except Exception as error:
-            logger.error("Failed to create calendar post: %s", error)
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def update_calendar_post(self, post_id: str, updates: CalendarPostUpdate) -> CalendarPost:
         try:
             update_data = updates.model_dump(mode="json", exclude_unset=True)
-            logger.debug("Updating calendar post %s: %s", post_id, update_data)
             response = (
                 self.admin_client.table(self.posts_table)
                 .update(update_data)
@@ -184,10 +174,6 @@ class CalendarService:
         except NotFoundError:
             raise
         except APIError as error:
-            logger.error(
-                "Supabase API error updating post %s: code=%s message=%s details=%s hint=%s",
-                post_id, error.code, error.message, error.details, error.hint,
-            )
             # Check constraint violations (23514) and other client errors
             # should surface as 422, not 502
             if error.code in ("23514", "23502", "23505", "22P02"):

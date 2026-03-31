@@ -1,9 +1,6 @@
-import logging
 from urllib.parse import urlparse
 
 from supabase import Client
-
-logger = logging.getLogger("lumeniq.storage")
 
 BUCKET_NAME = "business_media"
 SIGNED_URL_EXPIRY = 3600
@@ -46,8 +43,7 @@ def resolve_signed_url(
         )
         signed = result.get("signedURL") or result.get("signedUrl") or ""
         return signed or file_url
-    except Exception as exc:
-        logger.warning("Signed URL generation failed for %s: %s", storage_path, exc)
+    except Exception:
         return file_url
 
 

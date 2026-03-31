@@ -1,4 +1,3 @@
-import logging
 import os
 
 # ── SSL certificate fix for Python 3.13 on macOS ──────────────────────────────
@@ -17,12 +16,6 @@ from app.core.configuration import settings
 from app.routers import api_router
 from app.middleware.cors import configure_cors
 from app.middleware.rate_limiter import configure_rate_limiter
-from app.middleware.request_logging import configure_request_logging
-
-logging.basicConfig(
-    level=logging.DEBUG if settings.app_debug else logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-)
 
 application = FastAPI(
     title="LumenIQ API",
@@ -34,7 +27,6 @@ application = FastAPI(
 
 configure_cors(application)
 configure_rate_limiter(application)
-configure_request_logging(application)
 
 application.include_router(api_router, prefix=settings.api_version_prefix)
 
