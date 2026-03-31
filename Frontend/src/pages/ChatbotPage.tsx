@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const DEFAULT_CHAINLIT_URL = 'http://localhost:8000'; // Localhost URL for Chainlit for now. Change this later to the production URL.
 
 function normalizeUrl(url?: string) {
@@ -7,17 +9,28 @@ function normalizeUrl(url?: string) {
 const CHAINLIT_URL = normalizeUrl(import.meta.env.VITE_CHAINLIT_URL);
 
 export function ChatbotPage() {
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
   return (
     <div className="relative font-switzer text-slate-900">
       <BackgroundBlobs />
       <main className="mx-auto flex min-h-[calc(100vh-220px)] max-w-[96rem] flex-col gap-6 px-4 pt-10 pb-16">
         <Header />
-        <section className="flex flex-1 min-h-[min(720px,calc(100vh-280px))] flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+        <section className="relative flex flex-1 min-h-[min(720px,calc(100vh-280px))] flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+          {!iframeLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-10">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Loading AI Assistant...</p>
+              </div>
+            </div>
+          )}
           <iframe
             title="LumenIQ Chainlit assistant."
             src={CHAINLIT_URL}
             className="flex-1 w-full min-h-[560px] border-0 bg-white"
             allow="clipboard-read; clipboard-write"
+            onLoad={() => setIframeLoaded(true)}
           />
         </section>
       </main>

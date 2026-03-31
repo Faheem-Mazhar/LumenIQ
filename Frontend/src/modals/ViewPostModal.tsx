@@ -11,7 +11,7 @@ import {
 } from '../components/ui/alert-dialog';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle } from 'lucide-react';
+import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
@@ -56,6 +56,7 @@ export function PostDetailModal({
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>(post?.images || []);
   const [confirmAction, setConfirmAction] = useState<null | 'convertToDraft' | 'deletePost'>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b) => b.isActive),
@@ -106,47 +107,62 @@ export function PostDetailModal({
     }).format(date);
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const [year, month, day] = scheduledDate.split('-').map(Number);
     const draftDateTime = new Date(year, month - 1, day, hours, minutes);
 
-    onUpdatePost(post.id, {
-      caption,
-      images: selectedImages.length > 0 ? selectedImages : undefined,
-      status: 'draft',
-      scheduledDate: draftDateTime
-    });
-    onClose();
+    setIsSaving(true);
+    try {
+      await onUpdatePost(post.id, {
+        caption,
+        images: selectedImages.length > 0 ? selectedImages : undefined,
+        status: 'draft',
+        scheduledDate: draftDateTime
+      });
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSchedulePost = () => {
+  const handleSchedulePost = async () => {
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const [year, month, day] = scheduledDate.split('-').map(Number);
     const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
 
-    onUpdatePost(post.id, {
-      caption,
-      images: selectedImages.length > 0 ? selectedImages : undefined,
-      scheduledDate: scheduledDateTime,
-      status: 'scheduled'
-    });
-    onClose();
+    setIsSaving(true);
+    try {
+      await onUpdatePost(post.id, {
+        caption,
+        images: selectedImages.length > 0 ? selectedImages : undefined,
+        scheduledDate: scheduledDateTime,
+        status: 'scheduled'
+      });
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleConvertToDraftClick = () => setConfirmAction('convertToDraft');
 
   const handleDeletePostClick = () => setConfirmAction('deletePost');
 
-  const executeConfirmAction = () => {
-    if (confirmAction === 'convertToDraft') {
-      onUpdatePost(post.id, { status: 'draft' });
-      onClose();
-    } else if (confirmAction === 'deletePost') {
-      onDeletePost(post.id);
-      onClose();
+  const executeConfirmAction = async () => {
+    setIsSaving(true);
+    try {
+      if (confirmAction === 'convertToDraft') {
+        await onUpdatePost(post.id, { status: 'draft' });
+        onClose();
+      } else if (confirmAction === 'deletePost') {
+        await onDeletePost(post.id);
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+      setConfirmAction(null);
     }
-    setConfirmAction(null);
   };
 
   const handleImageSelection = (image: string) => {
@@ -312,13 +328,14 @@ export function PostDetailModal({
               <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   {isScheduled && (
-                    <Button variant="outline" onClick={handleConvertToDraftClick} className="text-muted-foreground">
+                    <Button variant="outline" onClick={handleConvertToDraftClick} disabled={isSaving} className="text-muted-foreground">
                       Convert to Draft
                     </Button>
                   )}
                   <Button
                     variant="outline"
                     onClick={handleDeletePostClick}
+                    disabled={isSaving}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -327,9 +344,11 @@ export function PostDetailModal({
                 </div>
                 {isDraft && (
                   <div className="flex items-center gap-3">
-                    <Button variant="outline" onClick={handleSaveDraft}>Save Draft</Button>
-                    <Button onClick={handleSchedulePost} className="gradient-blue-primary text-white hover:opacity-90">
-                      Schedule Post
+                    <Button variant="outline" onClick={handleSaveDraft} disabled={isSaving}>
+                      {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Draft'}
+                    </Button>
+                    <Button onClick={handleSchedulePost} disabled={isSaving} className="gradient-blue-primary text-white hover:opacity-90">
+                      {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scheduling...</> : 'Schedule Post'}
                     </Button>
                   </div>
                 )}

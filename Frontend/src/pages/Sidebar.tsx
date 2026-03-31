@@ -628,7 +628,18 @@ export function Sidebar({ children }: SidebarProps) {
       {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto">
         <div className="md:pt-0 pt-14">
-          <div className="p-5 md:p-8">{children}</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="p-5 md:p-8"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

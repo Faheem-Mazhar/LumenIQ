@@ -1,5 +1,5 @@
 import { api } from './client';
-import { cacheGet, cacheSet, cacheKey, ANALYTICS_TTL } from './cache';
+import { cached, cacheKey } from './cache';
 import type {
   KpiItem,
   AudienceDataPoint,
@@ -8,21 +8,6 @@ import type {
   TopPost,
   ActivityItem,
 } from '../types/analytics';
-
-/**
- * Wraps an API call with a read-through cache.
- * If a fresh entry exists in the in-memory cache it is returned immediately
- * without hitting the network. Otherwise the request fires, and the result
- * is stored for `ttlMs` milliseconds before the next caller re-fetches.
- */
-async function cached<T>(key: string, fn: () => Promise<T>, ttlMs = ANALYTICS_TTL): Promise<T> {
-  const hit = cacheGet<T>(key);
-  if (hit !== null) return hit;
-
-  const value = await fn();
-  cacheSet(key, value, ttlMs);
-  return value;
-}
 
 export const analyticsApi = {
   getKpis: (businessId: string, range: string) =>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -214,53 +214,60 @@ export function DashboardPage() {
   const [topPosts, setTopPosts] = useState<TopPost[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
+  const fetchingRef = useRef(false);
+
   const fetchDashboardData = useCallback(async () => {
-    if (!businessId) return;
+    if (!businessId || fetchingRef.current) return;
+    fetchingRef.current = true;
 
     // ── Wave 1 (immediate): above-the-fold KPI cards + platform badges ──
     setKpiLoading(true);
     setChartsLoading(true);
 
-    const [kpis, platforms] = await Promise.allSettled([
-      analyticsApi.getKpis(businessId, timeRange),
-      analyticsApi.getPlatforms(businessId),
-    ]);
-
-    if (kpis.status === 'fulfilled') setKpiData(kpis.value);
-    if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
-    setKpiLoading(false);
-
-    // ── Wave 2 (after Wave 1): charts, top posts, activity, calendar ──
-    const [audience, engagement, top, activity] = await Promise.allSettled([
-      analyticsApi.getAudience(businessId, timeRange),
-      analyticsApi.getEngagement(businessId, timeRange),
-      analyticsApi.getTopPosts(businessId, timeRange),
-      analyticsApi.getActivity(businessId),
-    ]);
-
-    if (audience.status === 'fulfilled') setAudienceData(audience.value);
-    if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
-    if (top.status === 'fulfilled') setTopPosts(top.value);
-    if (activity.status === 'fulfilled') setRecentActivity(activity.value);
-
     try {
-      const calendarPosts = await calendarApi.listPosts(businessId);
-      const scheduled = calendarPosts.filter(p => p.status === 'scheduled');
+      const [kpis, platforms] = await Promise.allSettled([
+        analyticsApi.getKpis(businessId, timeRange),
+        analyticsApi.getPlatforms(businessId),
+      ]);
 
-      setUpcomingPosts(scheduled.slice(0, 4).map(mapCalendarPostToUpcoming));
+      if (kpis.status === 'fulfilled') setKpiData(kpis.value);
+      if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
+      setKpiLoading(false);
 
-      setKpiData(prev =>
-        prev.map(kpi =>
-          kpi.key === 'scheduledPosts'
-            ? { ...kpi, value: scheduled.length.toString() }
-            : kpi,
-        ),
-      );
-    } catch {
-      // calendar endpoint may not be populated yet
+      // ── Wave 2 (after Wave 1): charts, top posts, activity, calendar ──
+      const [audience, engagement, top, activity] = await Promise.allSettled([
+        analyticsApi.getAudience(businessId, timeRange),
+        analyticsApi.getEngagement(businessId, timeRange),
+        analyticsApi.getTopPosts(businessId, timeRange),
+        analyticsApi.getActivity(businessId),
+      ]);
+
+      if (audience.status === 'fulfilled') setAudienceData(audience.value);
+      if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
+      if (top.status === 'fulfilled') setTopPosts(top.value);
+      if (activity.status === 'fulfilled') setRecentActivity(activity.value);
+
+      try {
+        const calendarPosts = await calendarApi.listPosts(businessId);
+        const scheduled = calendarPosts.filter(p => p.status === 'scheduled');
+
+        setUpcomingPosts(scheduled.slice(0, 4).map(mapCalendarPostToUpcoming));
+
+        setKpiData(prev =>
+          prev.map(kpi =>
+            kpi.key === 'scheduledPosts'
+              ? { ...kpi, value: scheduled.length.toString() }
+              : kpi,
+          ),
+        );
+      } catch {
+        // calendar endpoint may not be populated yet
+      }
+
+      setChartsLoading(false);
+    } finally {
+      fetchingRef.current = false;
     }
-
-    setChartsLoading(false);
   }, [businessId, timeRange]);
 
   useEffect(() => {

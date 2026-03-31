@@ -1,4 +1,5 @@
 import { api, refreshAuth } from './client';
+import { cached, cacheKey, cacheDelete, MEDIA_TTL } from './cache';
 import { store } from '../auth/store';
 import { logout } from '../auth/store/authSlice';
 import type { Photo } from '../types/photo';
@@ -30,7 +31,11 @@ export function mapMediaToPhoto(media: BusinessMediaResponse): Photo {
 
 export const mediaApi = {
   list: (businessId: string) =>
-    api.get<BusinessMediaResponse[]>(`/businesses/${businessId}/media`),
+    cached(
+      cacheKey('media', businessId),
+      () => api.get<BusinessMediaResponse[]>(`/businesses/${businessId}/media`),
+      MEDIA_TTL,
+    ),
 
   upload: async (businessId: string, file: File): Promise<BusinessMediaResponse> => {
     // File uploads must use raw fetch (FormData is incompatible with the
@@ -81,6 +86,8 @@ export const mediaApi = {
       throw new Error(detail);
     }
 
-    return response.json();
+    const data: BusinessMediaResponse = await response.json();
+    cacheDelete(cacheKey('media', businessId));
+    return data;
   },
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -11,6 +11,7 @@ import type { RootState } from '../auth/store';
 import { calendarApi } from '../api/calendar';
 import { mapCalendarPostFromAPI } from '../types/calendar';
 import type { CalendarPost } from '../types/calendar';
+import { toast } from 'sonner';
 
 type Post = CalendarPost;
 
@@ -31,8 +32,11 @@ export function CalendarPage() {
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [listFilter, setListFilter] = useState<'draft' | 'scheduled'>('scheduled');
 
+  const fetchingRef = useRef(false);
+
   const fetchPosts = useCallback(async () => {
-    if (!businessId) return;
+    if (!businessId || fetchingRef.current) return;
+    fetchingRef.current = true;
     setIsLoading(true);
     try {
       const apiPosts = await calendarApi.listPosts(businessId);
@@ -41,6 +45,7 @@ export function CalendarPage() {
       // endpoint may not exist yet
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [businessId]);
 
@@ -64,8 +69,10 @@ export function CalendarPage() {
         status: postData.status || 'draft',
       });
       setPosts(prev => [...prev, mapCalendarPostFromAPI(created)]);
+      toast.success('Post created');
     } catch (err) {
       console.error('Failed to create calendar post:', err);
+      toast.error('Failed to save post');
       const newPost: Post = {
         id: Date.now().toString(),
         caption: postData.caption || '',
@@ -94,8 +101,10 @@ export function CalendarPage() {
       setPosts(prev =>
         prev.map(post => (post.id === postId ? mapCalendarPostFromAPI(updated) : post)),
       );
+      toast.success('Post updated');
     } catch (err) {
       console.error('Failed to update calendar post:', err);
+      toast.error('Failed to update post');
       setPosts(prev =>
         prev.map(post => (post.id === postId ? { ...post, ...updates } : post)),
       );
@@ -106,8 +115,10 @@ export function CalendarPage() {
     if (!businessId) return;
     try {
       await calendarApi.deletePost(businessId, postId);
+      toast.success('Post deleted');
     } catch (err) {
       console.error('Failed to delete calendar post:', err);
+      toast.error('Failed to delete post');
     }
     setPosts(prev => prev.filter(post => post.id !== postId));
   };
@@ -203,6 +214,7 @@ export function CalendarPage() {
 
         <CalendarView
           posts={posts}
+          isLoading={isLoading}
           onPostClick={handlePostClick}
           onCreatePost={handleCreatePost}
         />

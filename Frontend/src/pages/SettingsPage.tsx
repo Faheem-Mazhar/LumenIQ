@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useBusiness } from '../auth/hooks/useBusiness';
-import { 
-  User, 
-  Bell, 
-  CreditCard, 
-  Building, 
+import {
+  User,
+  Bell,
+  CreditCard,
+  Building,
   MapPin,
   Plus,
   Trash2,
-  Check
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -17,7 +18,6 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { Skeleton } from '../components/ui/skeleton';
 import { AddBusinessModal } from '../modals/AddBusinessModal';
 import { PlanSelectionModal } from '../modals/PlanSelectionModal';
 import { PaymentMethodModal } from '../modals/PaymentMethodModal';
@@ -95,6 +95,7 @@ export function SettingsPage() {
   } = useBusiness();
 
   const [planStreams, setPlanStreams] = useState<PlanStream[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [newBusiness, setNewBusiness] = useState<Partial<Business>>({
     name: '',
@@ -130,7 +131,10 @@ export function SettingsPage() {
   const [businessIdPendingDelete, setBusinessIdPendingDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    plansApi.list().then(setPlanStreams).catch(() => {});
+    plansApi.list()
+      .then(setPlanStreams)
+      .catch(() => {})
+      .finally(() => setPlansLoading(false));
   }, []);
 
   useEffect(() => {
@@ -220,7 +224,6 @@ export function SettingsPage() {
   const handleSaveBusiness = async () => {
     const b = activeBusiness ?? businesses[0];
     if (!b) return;
-    setIsEditingBusiness(false);
     setIsSavingBusiness(true);
     try {
       const response = await businessApi.update(b.id, {
@@ -232,6 +235,7 @@ export function SettingsPage() {
       });
       const mapped = mapBusinessToFrontend(response);
       updateBusinessFields(b.id, mapped);
+      setIsEditingBusiness(false);
     } catch {
       setEditingBusinessInfo({});
     } finally {
@@ -240,7 +244,6 @@ export function SettingsPage() {
   };
 
   const handleSavePersonal = async () => {
-    setIsEditingPersonal(false);
     setIsSavingPersonal(true);
     try {
       await authApi.updateProfile({
@@ -253,6 +256,7 @@ export function SettingsPage() {
         lastName: personalInfo.lastName,
         phone: personalInfo.phone,
       });
+      setIsEditingPersonal(false);
     } catch {
       // revert local form back to store values on failure
       if (user) {
@@ -324,31 +328,47 @@ export function SettingsPage() {
         {/* Businesses Tab */}
         <TabsContent value="businesses" className="space-y-6">
           {/* Current Plan Info */}
-          <Card className="p-6 rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50 to-slate-50 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-lg font-outfit text-slate-900">{currentPlan.name} Plan</h3>
-                  <span className="px-2 py-0.5 rounded-full text-xs  bg-blue-600 text-white">
-                    {currentPlan.type}
-                  </span>
+          {plansLoading ? (
+            <Card className="p-6 rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50 to-slate-50 shadow-sm animate-pulse">
+              <div className="flex items-start justify-between">
+                <div className="space-y-3 flex-1">
+                  <div className="h-5 w-32 bg-muted rounded" />
+                  <div className="h-4 w-48 bg-muted rounded" />
+                  <div className="h-2 w-full bg-muted rounded-full" />
                 </div>
-                <p className="text-sm text-slate-600 mb-3">
-                  Using {businesses.length} of {currentPlan.maxBrands} available brands
-                </p>
-                <div className="w-full bg-slate-200/60 rounded-full h-2">
-                  <div 
-                    className="gradient-blue-primary h-2 rounded-full transition-all"
-                    style={{ width: `${(businesses.length / currentPlan.maxBrands) * 100}%` }}
-                  />
+                <div className="space-y-2 text-right">
+                  <div className="h-7 w-16 bg-muted rounded ml-auto" />
+                  <div className="h-4 w-12 bg-muted rounded ml-auto" />
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-outfit text-slate-900">${currentPlan.price}</div>
-                <div className="text-sm text-slate-600">/month</div>
+            </Card>
+          ) : (
+            <Card className="p-6 rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50 to-slate-50 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-outfit text-slate-900">{currentPlan.name} Plan</h3>
+                    <span className="px-2 py-0.5 rounded-full text-xs  bg-blue-600 text-white">
+                      {currentPlan.type}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-3">
+                    Using {businesses.length} of {currentPlan.maxBrands} available brands
+                  </p>
+                  <div className="w-full bg-slate-200/60 rounded-full h-2">
+                    <div
+                      className="gradient-blue-primary h-2 rounded-full transition-all"
+                      style={{ width: `${(businesses.length / currentPlan.maxBrands) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-outfit text-slate-900">${currentPlan.price}</div>
+                  <div className="text-sm text-slate-600">/month</div>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Select or Add Business */}
           <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
@@ -513,25 +533,14 @@ export function SettingsPage() {
                 <Button
                   className="gradient-blue-primary text-white hover:opacity-90 shadow-sm"
                   onClick={handleSaveBusiness}
+                  disabled={isSavingBusiness}
                 >
-                  Save Changes
+                  {isSavingBusiness ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </Button>
-              )}
-
-              {isSavingBusiness && (
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4">
-                  <div className="text-sm  text-slate-700">Updating client info</div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-full" />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-4 w-5/6" />
-                    </div>
-                  </div>
-                </div>
               )}
             </div>
           </Card>
@@ -605,25 +614,14 @@ export function SettingsPage() {
                 <Button
                   className="gradient-blue-primary text-white hover:opacity-90 shadow-sm"
                   onClick={handleSavePersonal}
+                  disabled={isSavingPersonal}
                 >
-                  Save Changes
+                  {isSavingPersonal ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </Button>
-              )}
-
-              {isSavingPersonal && (
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4">
-                  <div className="text-sm  text-slate-700">Updating client info</div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-full" />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-4 w-5/6" />
-                    </div>
-                  </div>
-                </div>
               )}
             </div>
           </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Upload,
   Search,
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 
 export function PhotoStoragePage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
@@ -38,13 +39,20 @@ export function PhotoStoragePage() {
   );
   const businessId = activeBusiness?.id;
 
+  const fetchingRef = useRef(false);
+
   const fetchMedia = useCallback(async () => {
-    if (!businessId) return;
+    if (!businessId || fetchingRef.current) return;
+    fetchingRef.current = true;
+    setIsLoading(true);
     try {
       const data = await mediaApi.list(businessId);
       setPhotos(data.map(mapMediaToPhoto));
     } catch {
       toast.error('Failed to load media');
+    } finally {
+      setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [businessId]);
 
@@ -118,58 +126,69 @@ export function PhotoStoragePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div className="space-y-3">
-              <p className="text-[13px] text-muted-foreground tracking-wide">Total Images</p>
-              <p className="text-[28px] leading-none font-outfit text-foreground">{photos.length}</p>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="border-border/60 bg-card p-5 animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/3 mb-3" />
+              <div className="h-8 bg-muted rounded w-1/2" />
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Total Images</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">{photos.length}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
+                <ImageIcon className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
-              <ImageIcon className="h-5 w-5 text-blue-600" />
+          </Card>
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">AI Generated</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">
+                  {photos.filter(p => p.isAIGenerated).length}
+                </p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50">
+                <Sparkles className="h-5 w-5 text-violet-600" />
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div className="space-y-3">
-              <p className="text-[13px] text-muted-foreground tracking-wide">AI Generated</p>
-              <p className="text-[28px] leading-none font-outfit text-foreground">
-                {photos.filter(p => p.isAIGenerated).length}
-              </p>
+          </Card>
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Uploaded</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">
+                  {photos.filter(p => !p.isAIGenerated).length}
+                </p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
+                <Upload className="h-5 w-5 text-emerald-600" />
+              </div>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50">
-              <Sparkles className="h-5 w-5 text-violet-600" />
+          </Card>
+          <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[13px] text-muted-foreground tracking-wide">Used in Posts</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">
+                  {photos.reduce((sum, p) => sum + p.usedInPosts, 0)}
+                </p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50">
+                <Eye className="h-5 w-5 text-amber-600" />
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div className="space-y-3">
-              <p className="text-[13px] text-muted-foreground tracking-wide">Uploaded</p>
-              <p className="text-[28px] leading-none font-outfit text-foreground">
-                {photos.filter(p => !p.isAIGenerated).length}
-              </p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
-              <Upload className="h-5 w-5 text-emerald-600" />
-            </div>
-          </div>
-        </Card>
-        <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div className="space-y-3">
-              <p className="text-[13px] text-muted-foreground tracking-wide">Used in Posts</p>
-              <p className="text-[28px] leading-none font-outfit text-foreground">
-                {photos.reduce((sum, p) => sum + p.usedInPosts, 0)}
-              </p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50">
-              <Eye className="h-5 w-5 text-amber-600" />
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
 
       {/* Toolbar */}
       <Card className="border-border/60 bg-card p-0">
@@ -226,7 +245,14 @@ export function PhotoStoragePage() {
       </Card>
 
       {/* Grid View */}
-      {viewMode === 'grid' && (
+      {isLoading && viewMode === 'grid' && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-xl border border-border/60 bg-card animate-pulse" />
+          ))}
+        </div>
+      )}
+      {!isLoading && viewMode === 'grid' && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {filteredPhotos.map((photo) => (
             <div
@@ -275,7 +301,22 @@ export function PhotoStoragePage() {
       )}
 
       {/* List View */}
-      {viewMode === 'list' && (
+      {isLoading && viewMode === 'list' && (
+        <Card className="border-border/60 bg-card p-0">
+          <div className="divide-y divide-border/40">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+                <div className="h-14 w-14 shrink-0 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-1/3" />
+                  <div className="h-3 bg-muted rounded w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+      {!isLoading && viewMode === 'list' && (
         <Card className="border-border/60 bg-card p-0">
           <div className="divide-y divide-border/40">
             {filteredPhotos.map((photo) => (
@@ -335,7 +376,7 @@ export function PhotoStoragePage() {
       )}
 
       {/* Empty State */}
-      {filteredPhotos.length === 0 && (
+      {!isLoading && filteredPhotos.length === 0 && (
         <Card className="border-border/60 bg-card p-10 text-center">
           <ImageIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">No photos found</p>

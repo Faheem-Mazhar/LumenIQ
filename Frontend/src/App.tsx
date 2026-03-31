@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from './components/ui/sonner';
@@ -8,12 +9,13 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingWizard } from './pages/OnboardingWizard';
-import { DashboardPage } from './pages/DashboardPage';
-import { ChatbotPage } from './pages/ChatbotPage';
-import { CalendarPage } from './pages/CalendarPage';
-import { PhotoStoragePage } from './pages/PhotoStoragePage';
-import { SettingsPage } from './pages/SettingsPage';
 import { useAuth } from './auth/hooks/useAuth';
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const ChatbotPage = lazy(() => import('./pages/ChatbotPage').then(m => ({ default: m.ChatbotPage })));
+const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const PhotoStoragePage = lazy(() => import('./pages/PhotoStoragePage').then(m => ({ default: m.PhotoStoragePage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 
 function AppContent() {
   const { isAuthenticated, needsOnboarding, hasCompletedOnboarding } = useAuth();
@@ -36,14 +38,16 @@ function AppContent() {
                 <OnboardingWizard />
               ) : (
                 <Sidebar>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/chat" element={<ChatbotPage />} />
-                    <Route path="/calendar" element={<CalendarPage />} />
-                    <Route path="/photo-storage" element={<PhotoStoragePage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                  </Routes>
+                  <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" /></div>}>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/chat" element={<ChatbotPage />} />
+                      <Route path="/calendar" element={<CalendarPage />} />
+                      <Route path="/photo-storage" element={<PhotoStoragePage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                    </Routes>
+                  </Suspense>
                 </Sidebar>
               )
             ) : (

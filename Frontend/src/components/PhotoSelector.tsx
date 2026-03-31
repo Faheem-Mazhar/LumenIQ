@@ -15,6 +15,7 @@ interface PhotoSelectorProps {
 export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b: { isActive: boolean }) => b.isActive),
@@ -22,9 +23,12 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
 
   useEffect(() => {
     if (activeBusiness?.id) {
+      setIsLoading(true);
       mediaApi.list(activeBusiness.id).then((data) => {
         if (Array.isArray(data)) setPhotos(data.map(mapMediaToPhoto));
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, [activeBusiness?.id]);
 
@@ -89,7 +93,16 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
         {/* Photo Grid */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredPhotos.map((photo, index) => (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-lg bg-accent animate-pulse" />
+              ))
+            ) : filteredPhotos.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                No photos found
+              </div>
+            ) : null}
+            {!isLoading && filteredPhotos.map((photo, index) => (
               <motion.button
                 key={photo.id}
                 initial={{ opacity: 0, scale: 0.9 }}

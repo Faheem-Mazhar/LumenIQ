@@ -11,7 +11,7 @@ import {
 } from '../components/ui/alert-dialog';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2 } from 'lucide-react';
+import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
@@ -55,6 +55,7 @@ export function PostModal({
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>(selectedPost?.images || []);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b) => b.isActive),
@@ -97,52 +98,62 @@ export function PostModal({
     }).format(date);
   };
 
-  const handleSaveAsDraft = () => {
+  const handleSaveAsDraft = async () => {
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const draftDateTime = new Date(scheduledDate + 'T00:00:00');
     draftDateTime.setHours(hours, minutes);
 
-    if (isCreatingNew) {
-      onSavePost({
-        caption,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        createdDate: new Date(),
-        scheduledDate: draftDateTime,
-        status: 'draft'
-      });
-    } else if (selectedPost) {
-      onUpdatePost(selectedPost.id, {
-        caption,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        status: 'draft',
-        scheduledDate: draftDateTime
-      });
+    setIsSaving(true);
+    try {
+      if (isCreatingNew) {
+        await onSavePost({
+          caption,
+          images: selectedImages.length > 0 ? selectedImages : undefined,
+          createdDate: new Date(),
+          scheduledDate: draftDateTime,
+          status: 'draft'
+        });
+      } else if (selectedPost) {
+        await onUpdatePost(selectedPost.id, {
+          caption,
+          images: selectedImages.length > 0 ? selectedImages : undefined,
+          status: 'draft',
+          scheduledDate: draftDateTime
+        });
+      }
+      onClose();
+    } finally {
+      setIsSaving(false);
     }
-    onClose();
   };
 
-  const handleSchedulePost = () => {
+  const handleSchedulePost = async () => {
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const scheduledDateTime = new Date(scheduledDate + 'T00:00:00');
     scheduledDateTime.setHours(hours, minutes);
 
-    if (isCreatingNew) {
-      onSavePost({
-        caption,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        createdDate: new Date(),
-        scheduledDate: scheduledDateTime,
-        status: 'scheduled'
-      });
-    } else if (selectedPost) {
-      onUpdatePost(selectedPost.id, {
-        caption,
-        images: selectedImages.length > 0 ? selectedImages : undefined,
-        scheduledDate: scheduledDateTime,
-        status: 'scheduled'
-      });
+    setIsSaving(true);
+    try {
+      if (isCreatingNew) {
+        await onSavePost({
+          caption,
+          images: selectedImages.length > 0 ? selectedImages : undefined,
+          createdDate: new Date(),
+          scheduledDate: scheduledDateTime,
+          status: 'scheduled'
+        });
+      } else if (selectedPost) {
+        await onUpdatePost(selectedPost.id, {
+          caption,
+          images: selectedImages.length > 0 ? selectedImages : undefined,
+          scheduledDate: scheduledDateTime,
+          status: 'scheduled'
+        });
+      }
+      onClose();
+    } finally {
+      setIsSaving(false);
     }
-    onClose();
   };
 
   const handleConvertToDraft = () => {
@@ -340,9 +351,11 @@ export function PostModal({
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" onClick={handleSaveAsDraft}>Save as Draft</Button>
-                  <Button onClick={handleSchedulePost} className="gradient-blue-primary text-white hover:opacity-90">
-                    Schedule Post
+                  <Button variant="outline" onClick={handleSaveAsDraft} disabled={isSaving}>
+                    {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save as Draft'}
+                  </Button>
+                  <Button onClick={handleSchedulePost} disabled={isSaving} className="gradient-blue-primary text-white hover:opacity-90">
+                    {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scheduling...</> : 'Schedule Post'}
                   </Button>
                 </div>
               </div>
