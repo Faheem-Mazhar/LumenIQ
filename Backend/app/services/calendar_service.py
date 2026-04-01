@@ -106,7 +106,7 @@ class CalendarService:
                 .eq("business_id", business_id)
             )
             if calendar_id:
-                query = query.eq("content_calendar_id", calendar_id)
+                query = query.eq("id", calendar_id)
             if status:
                 query = query.eq("status", status)
 
@@ -133,14 +133,6 @@ class CalendarService:
     def create_calendar_post(self, business_id: str, post_data: CalendarPostCreate) -> CalendarPost:
         try:
             insert_data = {"business_id": business_id, **post_data.model_dump(mode="json", exclude_none=True)}
-
-            # calendar_posts.content_calendar_id is NOT NULL in the schema.
-            # If the caller didn't supply one, resolve the correct weekly calendar
-            # row automatically so the frontend never needs to manage this FK.
-            if "content_calendar_id" not in insert_data:
-                insert_data["content_calendar_id"] = self._get_or_create_weekly_calendar(
-                    business_id, post_data.scheduled_at
-                )
 
             response = (
                 self.admin_client.table(self.posts_table)

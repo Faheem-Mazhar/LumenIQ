@@ -4,12 +4,11 @@ export interface CalendarPost {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled' | 'posted';
+  status: 'draft' | 'scheduled' | 'published';
 }
 
 export interface CalendarPostAPI {
   id: string;
-  content_calendar_id: string;
   caption: string | null;
   media: string[];
   scheduled_at: string | null;
@@ -27,6 +26,6 @@ export function mapCalendarPostFromAPI(post: CalendarPostAPI): CalendarPost {
     caption: post.caption ?? '',
     createdDate: new Date(post.created_at),
     scheduledDate: post.scheduled_at ? new Date(post.scheduled_at) : undefined,
-    status: post.status === 'scheduled' ? 'scheduled' : post.status === 'posted' ? 'posted' : 'draft',
+    status: post.status === 'scheduled' ? 'scheduled' : post.status === 'published' ? 'published' : 'draft',
   };
 }

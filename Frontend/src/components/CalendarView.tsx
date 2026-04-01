@@ -9,7 +9,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled' | 'posted';
+  status: 'draft' | 'scheduled' | 'published';
 }
 
 interface CalendarViewProps {
@@ -180,7 +180,7 @@ export function CalendarView({ posts, isLoading, onPostClick, onCreatePost }: Ca
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-600" />
-          <span className="text-sm text-muted-foreground">Posted</span>
+          <span className="text-sm text-muted-foreground">Published</span>
         </div>
       </div>
     </div>

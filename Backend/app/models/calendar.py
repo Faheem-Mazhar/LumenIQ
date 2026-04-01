@@ -21,7 +21,6 @@ class CalendarPostBase(BaseModel):
 
 
 class CalendarPostCreate(CalendarPostBase):
-    content_calendar_id: str | None = None
     scheduled_at: datetime | None = None
     status: ScheduledPostStatus = ScheduledPostStatus.DRAFT
     media: list[str] = []
@@ -41,7 +40,6 @@ class CalendarPostUpdate(BaseModel):
 class CalendarPost(CalendarPostBase):
     id: str
     business_id: str
-    content_calendar_id: str | None = None
     status: ScheduledPostStatus = ScheduledPostStatus.DRAFT
     scheduled_at: datetime | None = None
     approved_at: datetime | None = None

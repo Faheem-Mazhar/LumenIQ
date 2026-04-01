@@ -28,7 +28,6 @@ class OnboardingService:
                 name=data.business.name,
                 business_type=data.business.business_type,
                 description=data.business.description,
-                brand_color=data.business.brand_color,
                 b2b_or_b2c=data.business.b2b_or_b2c,
                 website_url=data.business.website_url,
                 instagram_handle=data.business.instagram_handle,
