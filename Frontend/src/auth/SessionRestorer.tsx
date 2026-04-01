@@ -26,17 +26,20 @@ interface SessionRestorerProps {
 export function SessionRestorer({ children }: SessionRestorerProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, user, token } = useSelector((state: RootState) => state.auth);
+  const businesses = useSelector((state: RootState) => state.business.businesses);
   const { fetchProfileAndBusinesses } = useAuth();
 
-  // true while we are mid-restore; avoids rendering protected routes early
+  // true while we are mid-restore; avoids rendering protected routes early.
+  // Must check businesses too — user is persisted to localStorage but
+  // businesses are not, so after a page refresh user is truthy while
+  // businesses is still [].
   const [restoring, setRestoring] = useState(() => {
-    // Only block render if we have a persisted token but no user yet
-    return isAuthenticated && !user;
+    return isAuthenticated && (!user || businesses.length === 0);
   });
 
   useEffect(() => {
-    // Nothing to restore: either not authenticated, or user is already loaded
-    if (!isAuthenticated || user) {
+    // Nothing to restore: not authenticated, or both user and businesses loaded
+    if (!isAuthenticated || (user && businesses.length > 0)) {
       setRestoring(false);
       return;
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -35,27 +35,26 @@ export function CalendarPage() {
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [listFilter, setListFilter] = useState<'draft' | 'scheduled' | 'posted'>('scheduled');
 
-  const fetchingRef = useRef(false);
   const handledNavAction = useRef(false);
 
-  const fetchPosts = useCallback(async () => {
-    if (!businessId || fetchingRef.current) return;
-    fetchingRef.current = true;
-    setIsLoading(true);
-    try {
-      const apiPosts = await calendarApi.listPosts(businessId);
-      setPosts(apiPosts.map(mapCalendarPostFromAPI));
-    } catch {
-      // endpoint may not exist yet
-    } finally {
-      setIsLoading(false);
-      fetchingRef.current = false;
-    }
-  }, [businessId]);
-
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    if (!businessId) return;
+    let cancelled = false;
+    setIsLoading(true);
+
+    (async () => {
+      try {
+        const apiPosts = await calendarApi.listPosts(businessId);
+        if (!cancelled) setPosts(apiPosts.map(mapCalendarPostFromAPI));
+      } catch {
+        // endpoint may not exist yet
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [businessId]);
 
   useEffect(() => {
     const state = location.state as { action?: string } | null;

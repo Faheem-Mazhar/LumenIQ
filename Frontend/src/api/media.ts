@@ -18,10 +18,14 @@ export interface BusinessMediaResponse {
 }
 
 export function mapMediaToPhoto(media: BusinessMediaResponse): Photo {
+  const isVideo =
+    media.file_type?.startsWith('video/') ||
+    /\.(mp4|webm|mov|avi|mkv)$/i.test(media.file_name ?? '');
   return {
     id: media.id,
     title: media.file_name ?? 'Untitled',
     url: media.file_url,
+    mediaType: isVideo ? 'video' : 'image',
     createdDate: media.created_at ? new Date(media.created_at) : new Date(),
     isAIGenerated: false,
     tags: media.tags ?? [],

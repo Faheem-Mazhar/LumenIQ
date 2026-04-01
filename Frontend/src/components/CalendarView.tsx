@@ -9,7 +9,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled' | 'published';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface CalendarViewProps {

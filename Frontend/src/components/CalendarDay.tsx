@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Plus, Clock } from 'lucide-react';
+import { MediaThumbnail, detectMediaType } from './MediaThumbnail';
 
 interface Post {
   id: string;
@@ -7,7 +8,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled' | 'published';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface CalendarDayProps {
@@ -74,9 +75,10 @@ export function CalendarDay({
               {/* Photo thumbnail or placeholder */}
               {firstImage ? (
                 <div className="relative w-full aspect-video">
-                  <img
+                  <MediaThumbnail
                     src={firstImage}
                     alt="Post"
+                    mediaType={detectMediaType(firstImage)}
                     className="w-full h-full object-cover"
                   />
                   {/* Multiple images indicator */}
@@ -89,11 +91,11 @@ export function CalendarDay({
                   <div className={`absolute top-0.5 right-0.5 text-[9px] px-1.5 py-0.5 rounded font-semibold ${
                     post.status === 'draft'
                       ? 'bg-yellow-500 text-white'
-                      : post.status === 'published'
+                      : post.status === 'posted'
                         ? 'bg-green-500 text-white'
                         : 'bg-red-500 text-white'
                   }`}>
-                    {post.status === 'draft' ? 'DRAFT' : post.status === 'published' ? 'POSTED' : 'SCHEDULED'}
+                    {post.status === 'draft' ? 'DRAFT' : post.status === 'posted' ? 'POSTED' : 'SCHEDULED'}
                   </div>
                   {/* Time overlay */}
                   {post.scheduledDate && (
@@ -113,13 +115,13 @@ export function CalendarDay({
                   <div className={`w-full h-full flex items-center justify-center ${
                     post.status === 'draft'
                       ? 'bg-gradient-to-br from-yellow-50 to-yellow-100'
-                      : post.status === 'published'
+                      : post.status === 'posted'
                         ? 'bg-gradient-to-br from-green-50 to-green-100'
                         : 'bg-gradient-to-br from-red-50 to-red-100'
                   }`}>
                     <div className="text-center">
                       <div className="text-2xl mb-1">
-                        {post.status === 'draft' ? '📝' : post.status === 'published' ? '✅' : '📅'}
+                        {post.status === 'draft' ? '📝' : post.status === 'posted' ? '✅' : '📅'}
                       </div>
                     </div>
                   </div>
@@ -127,11 +129,11 @@ export function CalendarDay({
                   <div className={`absolute top-0.5 right-0.5 text-[9px] px-1.5 py-0.5 rounded font-semibold ${
                     post.status === 'draft'
                       ? 'bg-yellow-500 text-white'
-                      : post.status === 'published'
+                      : post.status === 'posted'
                         ? 'bg-green-500 text-white'
                         : 'bg-red-500 text-white'
                   }`}>
-                    {post.status === 'draft' ? 'DRAFT' : post.status === 'published' ? 'POSTED' : 'SCHEDULED'}
+                    {post.status === 'draft' ? 'DRAFT' : post.status === 'posted' ? 'POSTED' : 'SCHEDULED'}
                   </div>
                   {/* Time overlay */}
                   {post.scheduledDate && (

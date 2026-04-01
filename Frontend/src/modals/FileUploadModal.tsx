@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
-import { CloudUpload, X, Trash2, CheckCircle2, ImageIcon } from 'lucide-react';
+import { CloudUpload, X, Trash2, CheckCircle2, ImageIcon, Film } from 'lucide-react';
 import { Progress } from '../components/ui/progress';
 
 interface UploadFile {
@@ -26,8 +26,11 @@ interface FileUploadModalProps {
   maxSizeMB?: number;
 }
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const ACCEPTED_EXTENSIONS = '.jpg,.jpeg,.png,.gif,.webp';
+const ACCEPTED_MEDIA_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'video/mp4', 'video/webm', 'video/quicktime',
+];
+const ACCEPTED_EXTENSIONS = '.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mov';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 KB';
@@ -52,7 +55,7 @@ export function FileUploadModal({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(async (file: File) => {
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) return;
+    if (!ACCEPTED_MEDIA_TYPES.includes(file.type)) return;
     if (file.size > maxSizeMB * 1024 * 1024) return;
 
     const id = crypto.randomUUID();
@@ -153,7 +156,7 @@ export function FileUploadModal({
               Choose a file or drag &amp; drop it here.
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              JPEG, PNG, GIF, and WEBP formats, up to {maxSizeMB} MB.
+              JPEG, PNG, GIF, WEBP, MP4, WEBM, and MOV formats, up to {maxSizeMB} MB.
             </p>
           </div>
           <Button

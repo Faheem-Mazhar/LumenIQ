@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { MediaThumbnail, detectMediaType } from '../components/MediaThumbnail';
 import { Button } from '../components/ui/button';
 import type { CalendarPost as Post } from '../types/calendar';
 
@@ -160,16 +161,18 @@ export function PostListModal({
                                   {post.images && post.images.length > 0 ? (
                                     <div className="flex-shrink-0">
                                       {post.images.length === 1 ? (
-                                        <img
+                                        <MediaThumbnail
                                           src={post.images[0]}
                                           alt="Post"
+                                          mediaType={detectMediaType(post.images[0])}
                                           className="w-24 h-24 object-cover rounded-lg"
                                         />
                                       ) : (
                                         <div className="relative w-24 h-24">
-                                          <img
+                                          <MediaThumbnail
                                             src={post.images[0]}
                                             alt="Post"
+                                            mediaType={detectMediaType(post.images[0])}
                                             className="w-24 h-24 object-cover rounded-lg"
                                           />
                                           <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Upload,
   Search,
@@ -21,7 +21,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../auth/store';
 import { mediaApi, mapMediaToPhoto } from '../api/media';
 import { toast } from 'sonner';
-import { LazyImage } from '../components/LazyImage';
+import { MediaThumbnail } from '../components/MediaThumbnail';
 
 export function PhotoStoragePage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -40,26 +40,24 @@ export function PhotoStoragePage() {
   );
   const businessId = activeBusiness?.id;
 
-  const fetchingRef = useRef(false);
-
-  const fetchMedia = useCallback(async () => {
-    if (!businessId || fetchingRef.current) return;
-    fetchingRef.current = true;
-    setIsLoading(true);
-    try {
-      const data = await mediaApi.list(businessId);
-      setPhotos(data.map(mapMediaToPhoto));
-    } catch {
-      toast.error('Failed to load media');
-    } finally {
-      setIsLoading(false);
-      fetchingRef.current = false;
-    }
-  }, [businessId]);
-
   useEffect(() => {
-    fetchMedia();
-  }, [fetchMedia]);
+    if (!businessId) return;
+    let cancelled = false;
+    setIsLoading(true);
+
+    (async () => {
+      try {
+        const data = await mediaApi.list(businessId);
+        if (!cancelled) setPhotos(data.map(mapMediaToPhoto));
+      } catch {
+        if (!cancelled) toast.error('Failed to load media');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [businessId]);
 
   const filteredPhotos = photos.filter(photo => {
     const matchesSearch = photo.tags.some(tag =>
@@ -264,9 +262,10 @@ export function PhotoStoragePage() {
               onClick={() => setSelectedPhoto(photo)}
               className="group relative aspect-square cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-card transition-shadow hover:shadow-md"
             >
-              <LazyImage
+              <MediaThumbnail
                 src={photo.url}
                 alt={photo.title}
+                mediaType={photo.mediaType}
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 flex flex-col justify-between bg-black/60 p-3 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
@@ -329,9 +328,10 @@ export function PhotoStoragePage() {
                 onClick={() => setSelectedPhoto(photo)}
                 className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30 cursor-pointer"
               >
-                <LazyImage
+                <MediaThumbnail
                   src={photo.url}
                   alt={photo.title}
+                  mediaType={photo.mediaType}
                   className="h-14 w-14 shrink-0 rounded-lg object-cover"
                 />
                 <div className="min-w-0 flex-1">
@@ -407,10 +407,12 @@ export function PhotoStoragePage() {
             </button>
             <div className="grid md:grid-cols-2">
               <div className="p-4 md:p-5">
-                <LazyImage
+                <MediaThumbnail
                   src={selectedPhoto.url}
                   alt="Selected"
+                  mediaType={selectedPhoto.mediaType}
                   className="h-full w-full rounded-lg object-cover"
+                  controls={selectedPhoto.mediaType === 'video'}
                 />
               </div>
               <div className="space-y-5 p-5 md:p-6">
@@ -423,7 +425,13 @@ export function PhotoStoragePage() {
                   )}
                   <DetailRow
                     label="Type"
-                    value={selectedPhoto.isAIGenerated ? 'AI Generated' : 'Uploaded'}
+                    value={
+                      selectedPhoto.mediaType === 'video'
+                        ? 'Video'
+                        : selectedPhoto.isAIGenerated
+                          ? 'AI Generated'
+                          : 'Uploaded'
+                    }
                   />
                   <DetailRow
                     label="Used in"

@@ -12,6 +12,7 @@ import {
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { MediaThumbnail, detectMediaType } from '../components/MediaThumbnail';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
@@ -25,7 +26,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface PostDetailModalProps {
@@ -172,6 +173,7 @@ export function PostDetailModal({
 
   const isDraft = post.status === 'draft';
   const isScheduled = post.status === 'scheduled';
+  const isPosted = post.status === 'posted';
   const displayImage = selectedImages.length > 0 ? selectedImages[0] : undefined;
 
   return (
@@ -200,10 +202,10 @@ export function PostDetailModal({
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">
-                    {isDraft ? 'Draft Post' : 'Scheduled Post'}
+                    {isDraft ? 'Draft Post' : isPosted ? 'Posted' : 'Scheduled Post'}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {isScheduled && post.scheduledDate 
+                    {(isScheduled || isPosted) && post.scheduledDate
                       ? formatDateTime(post.scheduledDate)
                       : formatDate(post.createdDate)
                     }
@@ -218,15 +220,25 @@ export function PostDetailModal({
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Status:</span>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    isDraft ? 'bg-muted text-muted-foreground' : 'bg-red-500/10 text-red-600 border border-red-500/30'
+                    isDraft
+                      ? 'bg-muted text-muted-foreground'
+                      : isPosted
+                        ? 'bg-green-500/10 text-green-600 border border-green-500/30'
+                        : 'bg-red-500/10 text-red-600 border border-red-500/30'
                   }`}>
-                    {isDraft ? 'Draft' : 'Scheduled'}
+                    {isDraft ? 'Draft' : isPosted ? 'Posted' : 'Scheduled'}
                   </span>
                 </div>
 
                 {displayImage ? (
                   <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
-                    <img src={displayImage} alt="Post preview" className="w-full h-full object-cover" />
+                    <MediaThumbnail
+                      src={displayImage}
+                      alt="Post preview"
+                      mediaType={detectMediaType(displayImage)}
+                      className="w-full h-full object-cover"
+                      controls={detectMediaType(displayImage) === 'video'}
+                    />
                     {isDraft && (
                       <button
                         onClick={() => setShowPhotoSelector(true)}
@@ -312,11 +324,11 @@ export function PostDetailModal({
                   </div>
                 )}
 
-                {isScheduled && post.scheduledDate && (
+                {(isScheduled || isPosted) && post.scheduledDate && (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      Scheduled For
+                      {isPosted ? 'Posted On' : 'Scheduled For'}
                     </Label>
                     <div className="text-sm text-foreground bg-muted rounded-lg p-3">
                       {formatDateTime(post.scheduledDate)}
@@ -352,7 +364,7 @@ export function PostDetailModal({
                     </Button>
                   </div>
                 )}
-                {isScheduled && (
+                {(isScheduled || isPosted) && (
                   <Button variant="outline" onClick={onClose}>Close</Button>
                 )}
               </div>

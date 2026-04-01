@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
@@ -216,65 +216,67 @@ export function DashboardPage() {
   const [topPosts, setTopPosts] = useState<TopPost[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
-  const fetchingRef = useRef(false);
+  useEffect(() => {
+    if (!businessId) return;
+    let cancelled = false;
 
-  const fetchDashboardData = useCallback(async () => {
-    if (!businessId || fetchingRef.current) return;
-    fetchingRef.current = true;
-
-    // ── Wave 1 (immediate): above-the-fold KPI cards + platform badges ──
     setKpiLoading(true);
     setChartsLoading(true);
 
-    try {
-      const [kpis, platforms] = await Promise.allSettled([
-        analyticsApi.getKpis(businessId, timeRange),
-        analyticsApi.getPlatforms(businessId),
-      ]);
-
-      if (kpis.status === 'fulfilled') setKpiData(kpis.value);
-      if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
-      setKpiLoading(false);
-
-      // ── Wave 2 (after Wave 1): charts, top posts, activity, calendar ──
-      const [audience, engagement, top, activity] = await Promise.allSettled([
-        analyticsApi.getAudience(businessId, timeRange),
-        analyticsApi.getEngagement(businessId, timeRange),
-        analyticsApi.getTopPosts(businessId, timeRange),
-        analyticsApi.getActivity(businessId),
-      ]);
-
-      if (audience.status === 'fulfilled') setAudienceData(audience.value);
-      if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
-      if (top.status === 'fulfilled') setTopPosts(top.value);
-      if (activity.status === 'fulfilled') setRecentActivity(activity.value);
-
+    (async () => {
       try {
-        const calendarPosts = await calendarApi.listPosts(businessId);
-        const scheduled = calendarPosts.filter(p => p.status === 'scheduled');
+        // ── Wave 1: above-the-fold KPI cards + platform badges ──
+        const [kpis, platforms] = await Promise.allSettled([
+          analyticsApi.getKpis(businessId, timeRange),
+          analyticsApi.getPlatforms(businessId),
+        ]);
 
-        setUpcomingPosts(scheduled.slice(0, 4).map(mapCalendarPostToUpcoming));
+        if (cancelled) return;
+        if (kpis.status === 'fulfilled') setKpiData(kpis.value);
+        if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
+        setKpiLoading(false);
 
-        setKpiData(prev =>
-          prev.map(kpi =>
-            kpi.key === 'scheduledPosts'
-              ? { ...kpi, value: scheduled.length.toString() }
-              : kpi,
-          ),
-        );
-      } catch {
-        // calendar endpoint may not be populated yet
+        // ── Wave 2: charts, top posts, activity, calendar ──
+        const [audience, engagement, top, activity] = await Promise.allSettled([
+          analyticsApi.getAudience(businessId, timeRange),
+          analyticsApi.getEngagement(businessId, timeRange),
+          analyticsApi.getTopPosts(businessId, timeRange),
+          analyticsApi.getActivity(businessId),
+        ]);
+
+        if (cancelled) return;
+        if (audience.status === 'fulfilled') setAudienceData(audience.value);
+        if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
+        if (top.status === 'fulfilled') setTopPosts(top.value);
+        if (activity.status === 'fulfilled') setRecentActivity(activity.value);
+
+        try {
+          const calendarPosts = await calendarApi.listPosts(businessId);
+          if (cancelled) return;
+          const scheduled = calendarPosts.filter(p => p.status === 'scheduled');
+
+          setUpcomingPosts(scheduled.slice(0, 4).map(mapCalendarPostToUpcoming));
+
+          setKpiData(prev =>
+            prev.map(kpi =>
+              kpi.key === 'scheduledPosts'
+                ? { ...kpi, value: scheduled.length.toString() }
+                : kpi,
+            ),
+          );
+        } catch {
+          // calendar endpoint may not be populated yet
+        }
+      } finally {
+        if (!cancelled) {
+          setKpiLoading(false);
+          setChartsLoading(false);
+        }
       }
+    })();
 
-      setChartsLoading(false);
-    } finally {
-      fetchingRef.current = false;
-    }
+    return () => { cancelled = true; };
   }, [businessId, timeRange]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',

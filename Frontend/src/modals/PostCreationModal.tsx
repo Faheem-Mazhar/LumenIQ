@@ -12,6 +12,7 @@ import {
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, Loader2 } from 'lucide-react';
+import { MediaThumbnail, detectMediaType } from '../components/MediaThumbnail';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
@@ -25,7 +26,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface PostModalProps {
@@ -238,7 +239,7 @@ export function PostModal({
                         }`}
                       >
                         {post.images && post.images.length > 0 ? (
-                          <img src={post.images[0]} alt="Post preview" className="w-full h-full object-cover rounded-lg" />
+                          <MediaThumbnail src={post.images[0]} alt="Post preview" mediaType={detectMediaType(post.images[0])} className="w-full h-full object-cover rounded-lg" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
                             <ImageIcon className="w-8 h-8 text-muted-foreground" />
@@ -251,7 +252,7 @@ export function PostModal({
 
                 {selectedImages.length > 0 ? (
                   <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
-                    <img src={selectedImages[0]} alt="Post preview" className="w-full h-full object-cover" />
+                    <MediaThumbnail src={selectedImages[0]} alt="Post preview" mediaType={detectMediaType(selectedImages[0])} className="w-full h-full object-cover" />
                     <button
                       onClick={() => setShowPhotoSelector(true)}
                       className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
