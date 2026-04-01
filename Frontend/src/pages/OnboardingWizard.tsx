@@ -250,7 +250,7 @@ export function OnboardingWizard() {
         },
         business: {
           name: data.businessName!,
-          business_type: data.businessType,
+          business_format: data.businessType,
           description: data.businessDescription || undefined,
           b2b_or_b2c: data.b2bOrB2c,
           website_url: data.websiteUrl || undefined,
@@ -286,7 +286,11 @@ export function OnboardingWizard() {
 
   const handleNext = async () => {
     if (step === 5) {
-
+      // Businesses aren't persisted in localStorage—only auth state is.
+      // After the Stripe redirect (full page reload) SessionRestorer skips
+      // the fetch because `user` is already hydrated, leaving the business
+      // list empty.  Fetch here so the dashboard has data on first load.
+      await fetchProfileAndBusinesses('');
       navigate('/app/dashboard', { replace: true });
       return;
     }

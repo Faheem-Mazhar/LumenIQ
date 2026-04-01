@@ -26,7 +26,7 @@ class OnboardingService:
             user_id,
             BusinessCreate(
                 name=data.business.name,
-                business_type=data.business.business_type,
+                business_format=data.business.business_format,
                 description=data.business.description,
                 brand_color=data.business.brand_color,
                 b2b_or_b2c=data.business.b2b_or_b2c,

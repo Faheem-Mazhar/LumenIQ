@@ -15,7 +15,7 @@ class BusinessService:
         try:
             response = (
                 self.admin_client.table(self.table_name)
-                .select("id, name, business_type, city, country, instagram_handle, profile_json")
+                .select("id, name, business_format, business_type, city, country, instagram_handle, onboarding_json")
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .execute()
@@ -49,7 +49,7 @@ class BusinessService:
             column_data, profile_data = business_data.split_for_db()
             insert_data = {"user_id": user_id, **column_data}
             if profile_data:
-                insert_data["profile_json"] = profile_data
+                insert_data["onboarding_json"] = profile_data
             response = (
                 self.admin_client.table(self.table_name)
                 .insert(insert_data)
@@ -65,7 +65,7 @@ class BusinessService:
             column_data, profile_data = updates.split_for_db()
             if profile_data:
                 merged_profile = {**(existing.profile_json or {}), **profile_data}
-                column_data["profile_json"] = merged_profile
+                column_data["onboarding_json"] = merged_profile
             if not column_data:
                 return existing
             response = (

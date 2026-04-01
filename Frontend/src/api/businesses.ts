@@ -5,6 +5,7 @@ interface BusinessResponse {
   id: string;
   user_id: string;
   name: string | null;
+  business_format: string | null;
   business_type: string | null;
   city: string | null;
   country: string | null;
@@ -12,12 +13,8 @@ interface BusinessResponse {
   website_url: string | null;
   description: string | null;
   brand_color: string | null;
-  target_location: string | null;
-  b2b_or_b2c: string | null;
-  products_services: string | null;
-  industry_niche: string | null;
   ideal_customer: string | null;
-  profile_json: Record<string, unknown>;
+  onboarding_json: Record<string, unknown>;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -25,12 +22,12 @@ interface BusinessResponse {
 interface BusinessSummaryResponse {
   id: string;
   name: string | null;
+  business_format: string | null;
   business_type: string | null;
   city: string | null;
   country: string | null;
   instagram_handle: string | null;
   description: string | null;
-  brand_color: string | null;
 }
 
 export function mapBusinessToFrontend(b: BusinessSummaryResponse | BusinessResponse) {

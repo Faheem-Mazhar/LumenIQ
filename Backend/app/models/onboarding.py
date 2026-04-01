@@ -9,7 +9,7 @@ class OnboardingUserData(BaseModel):
 
 class OnboardingBusinessData(BaseModel):
     name: str
-    business_type: str | None = None
+    business_format: str | None = None
     description: str | None = None
     brand_color: str | None = None
     b2b_or_b2c: str | None = None

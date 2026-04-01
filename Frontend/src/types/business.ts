@@ -11,6 +11,7 @@ export interface Business {
 
 export interface BusinessCreate {
   name: string;
+  business_format?: string;
   business_type?: string;
   city?: string;
   country?: string;
@@ -27,6 +28,7 @@ export interface BusinessCreate {
 
 export interface BusinessUpdate {
   name?: string;
+  business_format?: string;
   business_type?: string;
   city?: string;
   country?: string;
@@ -44,12 +46,12 @@ export interface BusinessUpdate {
 export interface BusinessSummary {
   id: string;
   name?: string;
+  business_format?: string;
   business_type?: string;
   city?: string;
   country?: string;
   instagram_handle?: string;
   description?: string;
-  brand_color?: string;
 }
 
 export function mapBusinessSummaryToFrontend(summary: BusinessSummary): Business {

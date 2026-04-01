@@ -8,7 +8,7 @@ interface OnboardingUserPayload {
 
 interface OnboardingBusinessPayload {
   name: string;
-  business_type?: string;
+  business_format?: string;
   description?: string;
   brand_color?: string;
   b2b_or_b2c?: string;

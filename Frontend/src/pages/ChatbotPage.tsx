@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '../auth/hooks/useAuth';
 import { useBusiness } from '../auth/hooks/useBusiness';
 
 const DEFAULT_CHAINLIT_URL = 'http://localhost:8000'; // Localhost URL for Chainlit for now. Change this later to the production URL.
@@ -11,8 +12,16 @@ const CHAINLIT_URL = normalizeUrl(import.meta.env.VITE_CHAINLIT_URL);
 
 export function ChatbotPage() {
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const { user } = useAuth();
   const { activeBusiness, businesses } = useBusiness();
   const businessName = activeBusiness?.name ?? businesses[0]?.name ?? 'Your Business';
+
+  const chainlitSrc = (() => {
+    const url = new URL(CHAINLIT_URL);
+    if (user?.id) url.searchParams.set('user_id', user.id);
+    if (activeBusiness?.id) url.searchParams.set('business_id', activeBusiness.id);
+    return url.toString();
+  })();
 
   return (
     <div className="relative font-switzer text-slate-900">
@@ -30,7 +39,7 @@ export function ChatbotPage() {
           )}
           <iframe
             title="LumenIQ Chainlit assistant."
-            src={CHAINLIT_URL}
+            src={chainlitSrc}
             className="flex-1 w-full min-h-[560px] border-0 bg-white"
             allow="clipboard-read; clipboard-write"
             onLoad={() => setIframeLoaded(true)}

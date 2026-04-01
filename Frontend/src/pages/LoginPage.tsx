@@ -110,10 +110,6 @@ export function LoginPage() {
                 'Sign In'
               )}
             </Button>
-
-            <div className="text-center text-sm text-white/60">
-              Google sign-in coming soon
-            </div>
           </form>
 
           {/* Signup Link */}
