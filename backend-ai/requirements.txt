@@ -1,0 +1,11 @@
+chainlit
+semantic-kernel>=1.27.2
+openai
+python-dotenv
+pydantic
+requests
+supabase
+Pillow
+scikit-learn
+transformers
+torch

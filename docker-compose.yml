@@ -1,0 +1,37 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_CHAINLIT_URL: ${VITE_CHAINLIT_URL:-http://localhost:8001}
+    container_name: lumeniq-frontend
+    ports:
+      - "5176:80"
+    depends_on:
+      - backend
+      - backend-ai
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lumeniq-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  backend-ai:
+    build:
+      context: ./backend-ai
+      dockerfile: Dockerfile
+    container_name: lumeniq-backend-ai
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./backend-ai/.env
+    restart: unless-stopped

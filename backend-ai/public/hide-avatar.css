@@ -1,0 +1,5 @@
+/* Hide only thinking avatar images (those with "..." in alt text) */
+img[alt*="..."] {
+    display: none !important;
+    visibility: hidden !important;
+}

@@ -1,0 +1,11 @@
+# Ignore heavy/unnecessary directories for all services
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.env
+**/.git
+
+# Include frontend fonts (gitignored but needed for Docker build)
+!frontend/src/fonts
+!frontend/src/fonts/**
