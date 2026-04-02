@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from typing import Any
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.models.enumerations import ScheduledPostStatus
 
@@ -18,6 +18,11 @@ class CalendarPostBase(BaseModel):
     caption: str | None = None
     hashtags: list[str] = []
     day_of_the_week: int | None = None
+
+    @field_validator("hashtags", mode="before")
+    @classmethod
+    def _coerce_hashtags(cls, v: Any) -> list[str]:
+        return v if v is not None else []
 
 
 class CalendarPostCreate(CalendarPostBase):
@@ -50,6 +55,11 @@ class CalendarPost(CalendarPostBase):
     last_error: dict[str, Any] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+    @field_validator("media", mode="before")
+    @classmethod
+    def _coerce_media(cls, v: Any) -> list[str]:
+        return v if v is not None else []
 
 
 class PublishAttempt(BaseModel):
