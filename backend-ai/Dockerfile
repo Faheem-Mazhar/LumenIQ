@@ -17,10 +17,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Chainlit runs on port 8000 by default
-EXPOSE 8000
-
 # Set PYTHONPATH so app imports resolve correctly
 ENV PYTHONPATH=/app
 
-CMD ["chainlit", "run", "app/ui/chainlit_app.py", "--host", "0.0.0.0", "--port", "8000"]
+# Railway injects $PORT dynamically; default to 8000 for local Docker usage
+ENV PORT=8000
+EXPOSE 8000
+
+CMD chainlit run app/ui/chainlit_app.py --host 0.0.0.0 --port $PORT
