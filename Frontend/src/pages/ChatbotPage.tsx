@@ -2,13 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../auth/hooks/useAuth';
 import { useBusiness } from '../auth/hooks/useBusiness';
 
-const DEFAULT_CHAINLIT_URL = 'http://localhost:8000'; // Localhost URL for Chainlit for now. Change this later to the production URL.
-
-function normalizeUrl(url?: string) {
-  return (url ?? DEFAULT_CHAINLIT_URL).replace(/\/$/, '');
-}
-
-const CHAINLIT_URL = normalizeUrl(import.meta.env.VITE_CHAINLIT_URL);
+const CHAINLIT_URL = (import.meta.env.VITE_CHAINLIT_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
 export function ChatbotPage() {
   const [iframeLoaded, setIframeLoaded] = useState(false);
