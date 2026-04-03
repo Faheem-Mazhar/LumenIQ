@@ -14,46 +14,35 @@ from typing import Optional
 from chainlit.server import app as chainlit_server_app
 
 
-class QueryParamCookieMiddleware:
-    """ASGI middleware that reads user_id and business_id from iframe query
-    params and sets them as cookies for the WebSocket auth handshake."""
+# In-memory store for query params keyed by user_id, since cross-origin
+# iframes block cookies in modern browsers.
+_pending_params: dict[str, dict[str, str]] = {}
+
+
+class QueryParamMiddleware:
+    """ASGI middleware that captures user_id and business_id from iframe query
+    params and stores them in memory for the auth callback to read."""
 
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] == "http":
+        if scope["type"] in ("http", "websocket"):
             query_string = scope.get("query_string", b"").decode()
             params = parse_qs(query_string)
             user_id = params.get("user_id", [None])[0]
             business_id = params.get("business_id", [None])[0]
 
-            if user_id or business_id:
-                original_send = send
-
-                async def modified_send(message):
-                    if message["type"] == "http.response.start":
-                        headers = list(message.get("headers", []))
-                        if user_id:
-                            headers.append((
-                                b"set-cookie",
-                                f"cl_user_id={user_id}; Path=/; SameSite=Lax".encode(),
-                            ))
-                        if business_id:
-                            headers.append((
-                                b"set-cookie",
-                                f"cl_business_id={business_id}; Path=/; SameSite=Lax".encode(),
-                            ))
-                        message = {**message, "headers": headers}
-                    await original_send(message)
-
-                await self.app(scope, receive, modified_send)
-                return
+            if user_id:
+                _pending_params[user_id] = {
+                    "user_id": user_id,
+                    "business_id": business_id or "",
+                }
 
         await self.app(scope, receive, send)
 
 
-chainlit_server_app.add_middleware(QueryParamCookieMiddleware)
+chainlit_server_app.add_middleware(QueryParamMiddleware)
 
 
 kernel = kernel_init()
@@ -66,18 +55,44 @@ DEFAULT_BUSINESS_ID = ""
 
 @cl.header_auth_callback
 async def header_auth_callback(headers: dict) -> Optional[cl.User]:
-    """Read user_id and business_id from cookies set by the middleware."""
+    """Authenticate by reading user_id/business_id from the in-memory store
+    (populated by query params), falling back to cookies, and finally to
+    the Referer URL query params. Always returns a valid user so the iframe
+    never shows a login gate."""
+    user_id = DEFAULT_USER_ID
+    business_id = DEFAULT_BUSINESS_ID
+
+    # 1. Try cookies (works for same-origin / non-iframe)
     cookie_header = headers.get("cookie", "")
     cookies = SimpleCookie(cookie_header)
-
     user_id_cookie = cookies.get("cl_user_id")
     business_id_cookie = cookies.get("cl_business_id")
+    if user_id_cookie:
+        user_id = user_id_cookie.value
+        business_id = business_id_cookie.value if business_id_cookie else ""
 
-    user_id = user_id_cookie.value if user_id_cookie else DEFAULT_USER_ID
-    business_id = business_id_cookie.value if business_id_cookie else DEFAULT_BUSINESS_ID
+    # 2. Try Referer URL query params (works for cross-origin iframes)
+    referer = headers.get("referer", "")
+    if referer and "user_id" in referer:
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            ref_params = parse_qs(parsed.query)
+            if ref_params.get("user_id"):
+                user_id = ref_params["user_id"][0]
+                business_id = ref_params.get("business_id", [""])[0]
+        except Exception:
+            pass
 
+    # 3. Try in-memory store (populated by middleware on initial page load)
+    if user_id and user_id in _pending_params:
+        stored = _pending_params[user_id]
+        user_id = stored["user_id"]
+        business_id = stored["business_id"]
+
+    # Always return a user — real auth is handled by the Frontend (Supabase JWT)
     return cl.User(
-        identifier=user_id,
+        identifier=user_id or "anonymous",
         metadata={"user_id": user_id, "business_id": business_id},
     )
 
