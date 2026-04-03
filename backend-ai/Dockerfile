@@ -24,4 +24,4 @@ ENV PYTHONPATH=/app
 ENV PORT=8000
 EXPOSE 8000
 
-CMD chainlit run app/ui/chainlit_app.py --host 0.0.0.0 --port $PORT
+CMD ["/bin/sh", "-c", "chainlit run app/ui/chainlit_app.py --host 0.0.0.0 --port ${PORT}"]
