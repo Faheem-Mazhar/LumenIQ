@@ -43,7 +43,6 @@ interface OnboardingData {
   phone: string;
   businessName: string;
   businessDescription: string;
-  brandColor: string;
   businessType: 'digital' | 'physical';
   b2bOrB2c: 'b2b' | 'b2c' | 'both';
   websiteUrl: string;

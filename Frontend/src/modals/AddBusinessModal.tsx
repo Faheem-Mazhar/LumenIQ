@@ -24,7 +24,6 @@ interface BusinessFormData {
   description: string;
   websiteUrl: string;
   instagramHandle: string;
-  brandColor: string;
   location: string;
 }
 
@@ -54,7 +53,6 @@ export function AddBusinessModal({
         description: value.description || undefined,
         website_url: value.websiteUrl || undefined,
         instagram_handle: value.instagramHandle || undefined,
-        brand_color: value.brandColor || undefined,
         target_location: value.location || undefined,
       });
 
@@ -123,37 +121,6 @@ export function AddBusinessModal({
                   value={value.instagramHandle}
                   onChange={(event) => onChange({ instagramHandle: event.target.value })}
                   placeholder="@yourbusiness"
-                  className="border-slate-200 bg-white/90"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newBusinessColor" className="text-slate-700">Brand Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="newBusinessColor"
-                    type="color"
-                    value={value.brandColor}
-                    onChange={(event) => onChange({ brandColor: event.target.value })}
-                    className="w-16 h-10 p-1 cursor-pointer border-slate-200 bg-white/90"
-                  />
-                  <Input
-                    value={value.brandColor}
-                    onChange={(event) => onChange({ brandColor: event.target.value })}
-                    placeholder="#3b82f6"
-                    className="border-slate-200 bg-white/90"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newBusinessLocation" className="text-slate-700">Location</Label>
-                <Input
-                  id="newBusinessLocation"
-                  value={value.location}
-                  onChange={(event) => onChange({ location: event.target.value })}
-                  placeholder="City, Country"
                   className="border-slate-200 bg-white/90"
                 />
               </div>

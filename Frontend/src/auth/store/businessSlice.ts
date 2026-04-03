@@ -7,7 +7,6 @@ export interface Business {
   description: string;
   websiteUrl: string;
   instagramHandle: string;
-  brandColor: string;
   location: string;
   isActive: boolean;
 }
