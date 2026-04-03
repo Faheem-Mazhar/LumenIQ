@@ -8,6 +8,7 @@
 --   cluster_type: image, caption
 --   idea_status: pending, approved, rejected, used
 --   scheduled_post_status: draft, scheduled, published, failed
+--   media_source: user, ai
 
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
@@ -21,6 +22,7 @@ CREATE TABLE public.business_media (
   file_size integer,
   tags ARRAY DEFAULT '{}'::text[],
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  source USER-DEFINED NOT NULL DEFAULT 'user'::media_source,
   CONSTRAINT business_media_pkey PRIMARY KEY (id),
   CONSTRAINT business_media_business_id_fkey FOREIGN KEY (business_id) REFERENCES public.businesses(id)
 );
