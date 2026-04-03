@@ -172,7 +172,6 @@ export function SettingsPage() {
       description: newBusiness.description || '',
       websiteUrl: newBusiness.websiteUrl || '',
       instagramHandle: newBusiness.instagramHandle || '',
-      brandColor: newBusiness.brandColor || '#3b82f6',
       location: newBusiness.location || '',
       isActive: false
     };
@@ -183,7 +182,6 @@ export function SettingsPage() {
       description: '',
       websiteUrl: '',
       instagramHandle: '',
-      brandColor: '#3b82f6',
       location: ''
     });
     setIsAddBusinessOpen(false);
@@ -400,10 +398,7 @@ export function SettingsPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-outfit"
-                        style={{ backgroundColor: business.brandColor }}
-                      >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-outfit bg-blue-600">
                         {business.name.charAt(0)}
                       </div>
                       <div>
@@ -777,7 +772,6 @@ export function SettingsPage() {
             description: newBusiness.description || '',
             websiteUrl: newBusiness.websiteUrl || '',
             instagramHandle: newBusiness.instagramHandle || '',
-            brandColor: newBusiness.brandColor || '#3b82f6',
             location: newBusiness.location || ''
           }}
           onChange={(updates) => setNewBusiness({ ...newBusiness, ...updates })}

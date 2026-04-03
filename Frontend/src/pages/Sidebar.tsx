@@ -193,10 +193,7 @@ function WorkspaceMenuPanel({
                   isCurrent ? 'bg-slate-800/90 text-white' : 'text-slate-200 hover:bg-slate-800',
                 )}
               >
-                <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-white"
-                  style={{ backgroundColor: b.brandColor }}
-                >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-600 text-xs font-semibold text-white">
                   {b.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="min-w-0 flex-1 truncate">{b.name}</span>
@@ -326,8 +323,7 @@ export function Sidebar({ children }: SidebarProps) {
                   <button
                     type="button"
                     onClick={() => setHeaderMenuOpen((v) => !v)}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-95"
-                    style={{ backgroundColor: workspace.brandColor }}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-95"
                     title={workspace.name}
                   >
                     {workspace.name.charAt(0).toUpperCase()}
@@ -362,10 +358,7 @@ export function Sidebar({ children }: SidebarProps) {
               >
                 {multiBusiness && workspace ? (
                   <>
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-white"
-                      style={{ backgroundColor: workspace.brandColor }}
-                    >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
                       {workspace.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -537,10 +530,7 @@ export function Sidebar({ children }: SidebarProps) {
                       onClick={() => setHeaderMenuOpen((v) => !v)}
                       className="flex w-full items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors hover:bg-slate-800/60"
                     >
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-white"
-                        style={{ backgroundColor: workspace.brandColor }}
-                      >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
                         {workspace.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">

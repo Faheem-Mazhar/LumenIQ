@@ -12,7 +12,6 @@ interface BusinessResponse {
   instagram_handle: string | null;
   website_url: string | null;
   description: string | null;
-  brand_color: string | null;
   ideal_customer: string | null;
   onboarding_json: Record<string, unknown>;
   created_at: string | null;
@@ -31,9 +30,11 @@ interface BusinessSummaryResponse {
 }
 
 export function mapBusinessToFrontend(b: BusinessSummaryResponse | BusinessResponse) {
+  const fromTarget =
+    'target_location' in b ? (b as { target_location?: unknown }).target_location : undefined;
   const location =
-    'target_location' in b && b.target_location
-      ? b.target_location
+    typeof fromTarget === 'string' && fromTarget
+      ? fromTarget
       : [b.city, b.country].filter(Boolean).join(', ');
 
   return {
@@ -42,7 +43,6 @@ export function mapBusinessToFrontend(b: BusinessSummaryResponse | BusinessRespo
     description: b.description ?? '',
     websiteUrl: 'website_url' in b ? (b.website_url ?? '') : '',
     instagramHandle: b.instagram_handle ?? '',
-    brandColor: b.brand_color ?? '#3b82f6',
     location,
     isActive: false,
   };
