@@ -19,6 +19,7 @@ interface CalendarDayProps {
   posts: Post[];
   onPostClick: (post: Post) => void;
   onCreatePost: (date: Date) => void;
+  onDayClick: (date: Date, posts: Post[]) => void;
 }
 
 export function CalendarDay({
@@ -28,7 +29,8 @@ export function CalendarDay({
   isPast,
   posts,
   onPostClick,
-  onCreatePost
+  onCreatePost,
+  onDayClick,
 }: CalendarDayProps) {
   
   // Sort posts by scheduled time
@@ -49,6 +51,14 @@ export function CalendarDay({
       }`}
       whileHover={isPast ? undefined : { scale: 1.02 }}
       whileTap={isPast ? undefined : { scale: 0.98 }}
+      onClick={() => {
+        if (isPast) return;
+        if (posts.length > 0) {
+          onDayClick(date, posts);
+        } else {
+          onCreatePost(date);
+        }
+      }}
     >
       {/* Day number */}
       <div className={`text-sm font-medium mb-1 ${
@@ -158,17 +168,11 @@ export function CalendarDay({
         )}
       </div>
 
-      {/* Add post button (shows on hover, hidden for past dates) */}
+      {/* Add post hint (shows on hover, hidden for past dates) */}
       {posts.length === 0 && !isPast && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCreatePost(date);
-          }}
-          className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-        >
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
           <Plus className="w-5 h-5 text-primary" />
-        </button>
+        </div>
       )}
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -7,11 +7,14 @@ import { CalendarView } from '../components/CalendarView';
 import { PostModal } from '../modals/PostCreationModal';
 import { PostDetailModal } from '../modals/ViewPostModal';
 import { PostListModal } from '../modals/PostListModal';
+import { CalendarDayModal } from '../modals/CalendarDayModal';
 import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine, Loader2, CheckCircle } from 'lucide-react';
 import type { RootState } from '../auth/store';
 import { calendarApi } from '../api/calendar';
+import { cacheInvalidate } from '../api/cache';
+import { supabase } from '../lib/supabase';
 import { mapCalendarPostFromAPI } from '../types/calendar';
-import type { CalendarPost } from '../types/calendar';
+import type { CalendarPost, CalendarPostAPI } from '../types/calendar';
 import { toast } from 'sonner';
 
 type Post = CalendarPost;
@@ -34,26 +37,73 @@ export function CalendarPage() {
   const [isPostDetailModalOpen, setIsPostDetailModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [listFilter, setListFilter] = useState<'draft' | 'scheduled' | 'posted'>('scheduled');
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+  const [dayModalDate, setDayModalDate] = useState<Date>(new Date());
+  const [dayModalPosts, setDayModalPosts] = useState<Post[]>([]);
 
   const handledNavAction = useRef(false);
 
+  const fetchPosts = useCallback(async (showLoading = false) => {
+    if (!businessId) return;
+    if (showLoading) setIsLoading(true);
+    try {
+      cacheInvalidate(`calendar-posts:${businessId}`);
+      const apiPosts = await calendarApi.listPosts(businessId);
+      setPosts(apiPosts.map(mapCalendarPostFromAPI));
+    } catch {
+      // endpoint may not exist yet
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, [businessId]);
+
+  // Initial fetch
   useEffect(() => {
     if (!businessId) return;
-    let cancelled = false;
-    setIsLoading(true);
+    fetchPosts(true);
+  }, [businessId, fetchPosts]);
 
-    (async () => {
-      try {
-        const apiPosts = await calendarApi.listPosts(businessId);
-        if (!cancelled) setPosts(apiPosts.map(mapCalendarPostFromAPI));
-      } catch {
-        // endpoint may not exist yet
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
+  // Supabase Realtime: subscribe to calendar_posts changes for this business
+  useEffect(() => {
+    if (!businessId) return;
 
-    return () => { cancelled = true; };
+    const channel = supabase
+      .channel(`calendar_posts:${businessId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calendar_posts',
+          filter: `business_id=eq.${businessId}`,
+        },
+        (payload) => {
+          const { eventType, new: newRow, old: oldRow } = payload;
+
+          if (eventType === 'INSERT' && newRow) {
+            const post = mapCalendarPostFromAPI(newRow as CalendarPostAPI);
+            setPosts((prev) => {
+              if (prev.some((p) => p.id === post.id)) return prev;
+              return [...prev, post];
+            });
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          } else if (eventType === 'UPDATE' && newRow) {
+            const post = mapCalendarPostFromAPI(newRow as CalendarPostAPI);
+            setPosts((prev) =>
+              prev.map((p) => (p.id === post.id ? post : p)),
+            );
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          } else if (eventType === 'DELETE' && oldRow) {
+            setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [businessId]);
 
   useEffect(() => {
@@ -133,19 +183,30 @@ export function CalendarPage() {
 
   const handleDeletePost = async (postId: string) => {
     if (!businessId) return;
+    const post = posts.find(p => p.id === postId);
+    if (post?.status === 'posted') {
+      toast.error('Cannot delete a published post');
+      return;
+    }
     try {
       await calendarApi.deletePost(businessId, postId);
+      setPosts(prev => prev.filter(p => p.id !== postId));
       toast.success('Post deleted');
     } catch (err) {
       console.error('Failed to delete calendar post:', err);
       toast.error('Failed to delete post');
     }
-    setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
   const handlePostClick = (post: Post) => {
     setSelectedPost(post);
     setIsPostDetailModalOpen(true);
+  };
+
+  const handleDayClick = (date: Date, postsForDay: Post[]) => {
+    setDayModalDate(date);
+    setDayModalPosts(postsForDay);
+    setIsDayModalOpen(true);
   };
 
   const handleShowList = (filter: 'draft' | 'scheduled' | 'posted') => {
@@ -259,6 +320,7 @@ export function CalendarPage() {
           isLoading={isLoading}
           onPostClick={handlePostClick}
           onCreatePost={handleCreatePost}
+          onDayClick={handleDayClick}
         />
 
         <PostModal
@@ -285,6 +347,15 @@ export function CalendarPage() {
           posts={listFilter === 'scheduled' ? scheduledPosts : listFilter === 'posted' ? postedPosts : draftPosts}
           filter={listFilter}
           onPostClick={handlePostClick}
+        />
+
+        <CalendarDayModal
+          isOpen={isDayModalOpen}
+          onClose={() => setIsDayModalOpen(false)}
+          date={dayModalDate}
+          posts={dayModalPosts}
+          onPostClick={handlePostClick}
+          onCreatePost={handleCreatePost}
         />
       </div>
   );

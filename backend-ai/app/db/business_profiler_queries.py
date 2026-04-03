@@ -337,7 +337,8 @@ class BusinessProfilerQueries:
             "business_id": business_id,
             "file_url": image_url,
             "file_name": image_url.split("/")[-1] or "",
-            "file_type": "image/" + image_url.split(".")[-1].lower() 
+            "file_type": "image/" + image_url.split(".")[-1].lower(),
+            "source": "ai",
         }
         results = supabase.table("business_media").insert(data).execute()
         if not results.data:

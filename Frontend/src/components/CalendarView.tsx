@@ -17,9 +17,10 @@ interface CalendarViewProps {
   isLoading?: boolean;
   onPostClick: (post: Post) => void;
   onCreatePost: (date: Date) => void;
+  onDayClick: (date: Date, posts: Post[]) => void;
 }
 
-export function CalendarView({ posts, isLoading, onPostClick, onCreatePost }: CalendarViewProps) {
+export function CalendarView({ posts, isLoading, onPostClick, onCreatePost, onDayClick }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthNames = [
@@ -163,6 +164,7 @@ export function CalendarView({ posts, isLoading, onPostClick, onCreatePost }: Ca
                   date={date}
                   onPostClick={onPostClick}
                   onCreatePost={onCreatePost}
+                  onDayClick={onDayClick}
                 />
               );
             })}

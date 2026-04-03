@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, UploadFile, File
-from app.models.media import BusinessMedia, BusinessMediaCreate
+from app.models.media import BusinessMedia, BusinessMediaCreate, MediaSource
 from app.services.media_service import MediaService, get_media_service
 from app.dependencies.authentication import get_current_user_id
 
@@ -11,12 +11,13 @@ router = APIRouter(prefix="/businesses/{business_id}/media", tags=["Media"])
 @router.get("/", response_model=list[BusinessMedia])
 async def list_media(
     business_id: str,
+    source: MediaSource | None = Query(default=None),
     limit: int = Query(default=50, le=100),
     offset: int = Query(default=0, ge=0),
     user_id: str = Depends(get_current_user_id),
     media_service: MediaService = Depends(get_media_service),
 ):
-    return media_service.list_media(business_id, limit, offset)
+    return media_service.list_media(business_id, limit, offset, source=source)
 
 
 # NOTE: GET /{media_id} has no frontend caller — the frontend works from
@@ -62,14 +63,11 @@ async def upload_media(
     return media_record
 
 
-# NOTE: DELETE /{media_id} has no frontend caller yet.
-# Re-enable when media-deletion UI is added to PhotoStoragePage.
-
-# @router.delete("/{media_id}", status_code=204)
-# async def delete_media(
-#     business_id: str,
-#     media_id: str,
-#     user_id: str = Depends(get_current_user_id),
-#     media_service: MediaService = Depends(get_media_service),
-# ):
-#     media_service.delete_media(media_id)
+@router.delete("/{media_id}", status_code=204)
+async def delete_media(
+    business_id: str,
+    media_id: str,
+    user_id: str = Depends(get_current_user_id),
+    media_service: MediaService = Depends(get_media_service),
+):
+    media_service.delete_media(media_id)

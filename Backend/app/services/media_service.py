@@ -1,7 +1,7 @@
 from supabase import Client
 
 from app.database.supabase_admin import get_supabase_admin_client
-from app.models.media import BusinessMedia, BusinessMediaCreate
+from app.models.media import BusinessMedia, BusinessMediaCreate, MediaSource
 from app.core.exceptions import NotFoundError, ExternalServiceError
 from app.services.storage_utils import resolve_signed_url, BUCKET_NAME
 
@@ -16,12 +16,17 @@ class MediaService:
         media.file_url = resolve_signed_url(self.admin_client, media.file_url)
         return media
 
-    def list_media(self, business_id: str, limit: int = 50, offset: int = 0) -> list[BusinessMedia]:
+    def list_media(self, business_id: str, limit: int = 50, offset: int = 0, source: MediaSource | None = None) -> list[BusinessMedia]:
         try:
-            response = (
+            query = (
                 self.admin_client.table(self.table_name)
                 .select("*")
                 .eq("business_id", business_id)
+            )
+            if source is not None:
+                query = query.eq("source", source.value)
+            response = (
+                query
                 .order("created_at", desc=True)
                 .range(offset, offset + limit - 1)
                 .execute()

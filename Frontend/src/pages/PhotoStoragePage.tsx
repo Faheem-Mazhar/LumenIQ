@@ -14,7 +14,6 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
-import { Label } from '../components/ui/label';
 import type { Photo } from '../types/photo';
 import { FileUploadModal } from '../modals/FileUploadModal';
 import { useSelector } from 'react-redux';
@@ -31,9 +30,7 @@ export function PhotoStoragePage() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'ai' | 'uploaded'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('12:00');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b: { isActive: boolean }) => b.isActive),
@@ -79,19 +76,19 @@ export function PhotoStoragePage() {
     }).format(date);
   };
 
-  const handleDeletePhoto = (photoId: string) => {
-    setPhotos(photos.filter(p => p.id !== photoId));
-    setSelectedPhoto(null);
-  };
-
-  const handleUseInPost = () => {
-    setShowDatePicker(true);
-  };
-
-  const handleSchedulePost = () => {
-    alert(`Photo scheduled for ${selectedDate} at ${selectedTime}`);
-    setShowDatePicker(false);
-    setSelectedPhoto(null);
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!businessId) return;
+    setIsDeleting(true);
+    try {
+      await mediaApi.delete(businessId, photoId);
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      setSelectedPhoto(null);
+      toast.success('Media deleted');
+    } catch {
+      toast.error('Failed to delete media');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleUpload = async (file: File) => {
@@ -454,70 +451,15 @@ export function PhotoStoragePage() {
 
                 <div className="flex gap-2 pt-2">
                   <Button
-                    className="flex-1 gradient-blue-primary text-white hover:opacity-90 h-8 text-xs"
-                    onClick={handleUseInPost}
-                  >
-                    Use in Post
-                  </Button>
-                  <Button
                     variant="outline"
-                    className="h-8 text-xs border-border text-muted-foreground hover:text-foreground"
+                    className="flex-1 h-8 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={isDeleting}
+                    onClick={() => handleDeletePhoto(selectedPhoto.id)}
                   >
-                    Download
+                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                    {isDeleting ? 'Deleting...' : 'Delete Image'}
                   </Button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule Modal */}
-      {showDatePicker && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => setShowDatePicker(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md overflow-hidden rounded-xl border border-border/60 bg-card shadow-2xl"
-          >
-            <div className="border-b border-border/40 px-5 py-4">
-              <h3 className="text-[15px] font-outfit text-foreground">Schedule Post</h3>
-            </div>
-            <div className="space-y-4 p-5">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Date</Label>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="h-8 text-xs border-border bg-card"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Time</Label>
-                <Input
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="h-8 text-xs border-border bg-card"
-                />
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  className="flex-1 gradient-blue-primary text-white hover:opacity-90 h-8 text-xs"
-                  onClick={handleSchedulePost}
-                >
-                  Schedule
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-8 text-xs border-border text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowDatePicker(false)}
-                >
-                  Cancel
-                </Button>
               </div>
             </div>
           </div>

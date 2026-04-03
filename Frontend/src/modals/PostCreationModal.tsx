@@ -19,6 +19,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PhotoSelector } from '../components/PhotoSelector';
 import type { RootState } from '../auth/store';
+import { toast } from 'sonner';
 
 interface Post {
   id: string;
@@ -132,6 +133,11 @@ export function PostModal({
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const scheduledDateTime = new Date(scheduledDate + 'T00:00:00');
     scheduledDateTime.setHours(hours, minutes);
+
+    if (scheduledDateTime <= new Date()) {
+      toast.error('Cannot schedule a post in the past');
+      return;
+    }
 
     setIsSaving(true);
     try {

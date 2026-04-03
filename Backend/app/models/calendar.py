@@ -59,7 +59,24 @@ class CalendarPost(CalendarPostBase):
     @field_validator("media", mode="before")
     @classmethod
     def _coerce_media(cls, v: Any) -> list[str]:
-        return v if v is not None else []
+        if v is None:
+            return []
+        # Agent inserts media as a dict like {"url": "..."} or {"reel_video_url": "..."}
+        # Normalize to list[str] so the rest of the stack can work uniformly.
+        if isinstance(v, dict):
+            url = v.get("url") or v.get("reel_video_url") or ""
+            return [url] if url else []
+        if isinstance(v, list):
+            urls: list[str] = []
+            for item in v:
+                if isinstance(item, str):
+                    urls.append(item)
+                elif isinstance(item, dict):
+                    url = item.get("url") or item.get("reel_video_url") or ""
+                    if url:
+                        urls.append(url)
+            return urls
+        return []
 
 
 class PublishAttempt(BaseModel):

@@ -131,6 +131,10 @@ class CalendarService:
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def create_calendar_post(self, business_id: str, post_data: CalendarPostCreate) -> CalendarPost:
+        if post_data.scheduled_at and post_data.status == "scheduled":
+            now = datetime.now(post_data.scheduled_at.tzinfo)
+            if post_data.scheduled_at <= now:
+                raise ValidationError("Cannot schedule a post in the past")
         try:
             insert_data = {"business_id": business_id, **post_data.model_dump(mode="json", exclude_none=True)}
 
@@ -152,6 +156,10 @@ class CalendarService:
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def update_calendar_post(self, post_id: str, updates: CalendarPostUpdate) -> CalendarPost:
+        if updates.scheduled_at and updates.status == "scheduled":
+            now = datetime.now(updates.scheduled_at.tzinfo)
+            if updates.scheduled_at <= now:
+                raise ValidationError("Cannot schedule a post in the past")
         try:
             update_data = updates.model_dump(mode="json", exclude_unset=True)
             response = (
@@ -178,7 +186,19 @@ class CalendarService:
 
     def delete_calendar_post(self, post_id: str) -> None:
         try:
+            # Prevent deleting published posts
+            row = (
+                self.admin_client.table(self.posts_table)
+                .select("status")
+                .eq("id", post_id)
+                .single()
+                .execute()
+            )
+            if row.data and row.data.get("status") == "published":
+                raise ValidationError("Cannot delete a published post")
             self.admin_client.table(self.posts_table).delete().eq("id", post_id).execute()
+        except (ValidationError, NotFoundError):
+            raise
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 

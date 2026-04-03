@@ -6,6 +6,8 @@ import type { Photo } from '../types/photo';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+export type MediaSource = 'user' | 'ai';
+
 export interface BusinessMediaResponse {
   id: string;
   business_id: string;
@@ -14,6 +16,7 @@ export interface BusinessMediaResponse {
   file_type: string | null;
   file_size: number | null;
   tags: string[];
+  source: MediaSource;
   created_at: string | null;
 }
 
@@ -27,7 +30,7 @@ export function mapMediaToPhoto(media: BusinessMediaResponse): Photo {
     url: media.file_url,
     mediaType: isVideo ? 'video' : 'image',
     createdDate: media.created_at ? new Date(media.created_at) : new Date(),
-    isAIGenerated: false,
+    isAIGenerated: media.source === 'ai',
     tags: media.tags ?? [],
     usedInPosts: 0,
   };
@@ -40,6 +43,11 @@ export const mediaApi = {
       () => api.get<BusinessMediaResponse[]>(`/businesses/${businessId}/media`),
       MEDIA_TTL,
     ),
+
+  delete: async (businessId: string, mediaId: string): Promise<void> => {
+    await api.delete(`/businesses/${businessId}/media/${mediaId}`);
+    cacheDelete(cacheKey('media', businessId));
+  },
 
   upload: async (businessId: string, file: File): Promise<BusinessMediaResponse> => {
     // File uploads must use raw fetch (FormData is incompatible with the

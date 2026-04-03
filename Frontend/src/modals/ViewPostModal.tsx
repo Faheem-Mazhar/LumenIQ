@@ -11,7 +11,7 @@ import {
 } from '../components/ui/alert-dialog';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Calendar, Image as ImageIcon, Clock, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { MediaThumbnail, detectMediaType } from '../components/MediaThumbnail';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
@@ -19,6 +19,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PhotoSelector } from '../components/PhotoSelector';
 import type { RootState } from '../auth/store';
+import { toast } from 'sonner';
 
 interface Post {
   id: string;
@@ -131,6 +132,11 @@ export function PostDetailModal({
     const [hours, minutes] = scheduledTime.split(':').map(Number);
     const [year, month, day] = scheduledDate.split('-').map(Number);
     const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
+
+    if (scheduledDateTime <= new Date()) {
+      toast.error('Cannot schedule a post in the past');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -344,15 +350,17 @@ export function PostDetailModal({
                       Convert to Draft
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={handleDeletePostClick}
-                    disabled={isSaving}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Post
-                  </Button>
+                  {!isPosted && (
+                    <Button
+                      variant="outline"
+                      onClick={handleDeletePostClick}
+                      disabled={isSaving}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Post
+                    </Button>
+                  )}
                 </div>
                 {isDraft && (
                   <div className="flex items-center gap-3">
