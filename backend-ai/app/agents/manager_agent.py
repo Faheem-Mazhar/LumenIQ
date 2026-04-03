@@ -147,6 +147,7 @@ class ManagerAgent(Agent):
             if hasattr(final_agent_response, 'image_url') and final_agent_response.image_url:
                 image_element = cl.Image(url=final_agent_response.image_url, name="Generated Post Image", display="inline", size="large")
                 await cl.Message(content="Here is your generated post image:", elements=[image_element]).send()
+                self.business_profiler_queries.save_content_image(business_context.business_id, final_agent_response.image_url)
             else:
                 if hasattr(final_agent_response, 'format_for_display'):
                     display_data = final_agent_response.format_for_display()
@@ -361,3 +362,4 @@ class ManagerAgent(Agent):
                 step.output = scheduler_agent_result.message
  
             return scheduler_agent_result
+        
