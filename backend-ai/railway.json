@@ -4,7 +4,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "chainlit run app/ui/chainlit_app.py --host 0.0.0.0 --port $PORT",
+    "startCommand": "/bin/sh -c 'chainlit run app/ui/chainlit_app.py --host 0.0.0.0 --port ${PORT}'",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
   }
