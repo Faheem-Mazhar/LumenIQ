@@ -52,7 +52,7 @@ class BusinessProfilerQueries:
         if not business.data:
             raise LookupError(f"No business found for id={business_id}")
         row = business.data[0]
-        profile = load_json(row.get("onboarding_json"))
+        profile = load_json(row.get("profile_json"))
 
         # Freshness: competitor_posts uses latest posted_at of scraped posts for freshness
         posts_ts = (
@@ -331,6 +331,17 @@ class BusinessProfilerQueries:
         supabase.table("post_image_embeddings") \
             .insert(payload) \
             .execute()
+        
+    def save_content_image(self, business_id, image_url):
+        data = {
+            "business_id": business_id,
+            "file_url": image_url,
+            "file_name": image_url.split("/")[-1] or "",
+            "file_type": "image/" + image_url.split(".")[-1].lower() 
+        }
+        results = supabase.table("business_media").insert(data).execute()
+        if not results.data:
+            raise RuntimeError(f"Failed to save ai generated image to DB for image url:{image_url}")
 
 
 #scheduler queries
