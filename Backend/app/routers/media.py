@@ -63,14 +63,11 @@ async def upload_media(
     return media_record
 
 
-# NOTE: DELETE /{media_id} has no frontend caller yet.
-# Re-enable when media-deletion UI is added to PhotoStoragePage.
-
-# @router.delete("/{media_id}", status_code=204)
-# async def delete_media(
-#     business_id: str,
-#     media_id: str,
-#     user_id: str = Depends(get_current_user_id),
-#     media_service: MediaService = Depends(get_media_service),
-# ):
-#     media_service.delete_media(media_id)
+@router.delete("/{media_id}", status_code=204)
+async def delete_media(
+    business_id: str,
+    media_id: str,
+    user_id: str = Depends(get_current_user_id),
+    media_service: MediaService = Depends(get_media_service),
+):
+    media_service.delete_media(media_id)

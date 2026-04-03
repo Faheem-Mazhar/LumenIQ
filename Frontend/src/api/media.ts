@@ -44,6 +44,11 @@ export const mediaApi = {
       MEDIA_TTL,
     ),
 
+  delete: async (businessId: string, mediaId: string): Promise<void> => {
+    await api.delete(`/businesses/${businessId}/media/${mediaId}`);
+    cacheDelete(cacheKey('media', businessId));
+  },
+
   upload: async (businessId: string, file: File): Promise<BusinessMediaResponse> => {
     // File uploads must use raw fetch (FormData is incompatible with the
     // JSON-only api.* helpers), so we replicate the refresh-then-retry logic
