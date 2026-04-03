@@ -8,20 +8,36 @@ from app.schemas.business_context import BusinessContext
 from app.schemas.user_request import UserRequest
 from app.db.business_profiler_queries import BusinessProfilerQueries
 from app.orchestrator.route_types import RouteType, IntentType
-from urllib.parse import parse_qs
-from http.cookies import SimpleCookie
+from urllib.parse import parse_qs, urlparse
 from typing import Optional
 from chainlit.server import app as chainlit_server_app
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 
-# In-memory store for query params keyed by user_id, since cross-origin
-# iframes block cookies in modern browsers.
-_pending_params: dict[str, dict[str, str]] = {}
+# ── Custom endpoint to receive user context from the Frontend ────────────
+# The Frontend posts user_id and business_id here after the iframe loads,
+# bypassing cross-origin cookie issues entirely.
+_user_context: dict[str, dict[str, str]] = {}
 
 
+@chainlit_server_app.get("/auth/context")
+async def set_user_context(request: Request):
+    """Store user context from query params. Called by the iframe URL."""
+    user_id = request.query_params.get("user_id", "")
+    business_id = request.query_params.get("business_id", "")
+    if user_id:
+        _user_context[user_id] = {
+            "user_id": user_id,
+            "business_id": business_id,
+        }
+    return JSONResponse({"status": "ok"})
+
+
+# ── Middleware to capture query params from every request ─────────────────
 class QueryParamMiddleware:
-    """ASGI middleware that captures user_id and business_id from iframe query
-    params and stores them in memory for the auth callback to read."""
+    """ASGI middleware that captures user_id and business_id from query
+    params on any request and stores them for later use."""
 
     def __init__(self, app):
         self.app = app
@@ -34,7 +50,7 @@ class QueryParamMiddleware:
             business_id = params.get("business_id", [None])[0]
 
             if user_id:
-                _pending_params[user_id] = {
+                _user_context[user_id] = {
                     "user_id": user_id,
                     "business_id": business_id or "",
                 }
@@ -45,56 +61,43 @@ class QueryParamMiddleware:
 chainlit_server_app.add_middleware(QueryParamMiddleware)
 
 
-kernel = kernel_init()
-manager = ManagerAgent(kernel)
-business_profiler_queries = BusinessProfilerQueries()
-
-DEFAULT_USER_ID = ""
-DEFAULT_BUSINESS_ID = ""
-
-
+# ── Auth callback — always succeeds ──────────────────────────────────────
+# Real auth is handled by the Frontend (Supabase JWT). This just extracts
+# user context so Chainlit doesn't show a login gate.
 @cl.header_auth_callback
 async def header_auth_callback(headers: dict) -> Optional[cl.User]:
-    """Authenticate by reading user_id/business_id from the in-memory store
-    (populated by query params), falling back to cookies, and finally to
-    the Referer URL query params. Always returns a valid user so the iframe
-    never shows a login gate."""
-    user_id = DEFAULT_USER_ID
-    business_id = DEFAULT_BUSINESS_ID
+    user_id = ""
+    business_id = ""
 
-    # 1. Try cookies (works for same-origin / non-iframe)
-    cookie_header = headers.get("cookie", "")
-    cookies = SimpleCookie(cookie_header)
-    user_id_cookie = cookies.get("cl_user_id")
-    business_id_cookie = cookies.get("cl_business_id")
-    if user_id_cookie:
-        user_id = user_id_cookie.value
-        business_id = business_id_cookie.value if business_id_cookie else ""
-
-    # 2. Try Referer URL query params (works for cross-origin iframes)
+    # Try to extract from Referer (the iframe src URL has query params)
     referer = headers.get("referer", "")
-    if referer and "user_id" in referer:
+    if referer:
         try:
-            from urllib.parse import urlparse
             parsed = urlparse(referer)
             ref_params = parse_qs(parsed.query)
-            if ref_params.get("user_id"):
-                user_id = ref_params["user_id"][0]
-                business_id = ref_params.get("business_id", [""])[0]
+            user_id = ref_params.get("user_id", [""])[0]
+            business_id = ref_params.get("business_id", [""])[0]
         except Exception:
             pass
 
-    # 3. Try in-memory store (populated by middleware on initial page load)
-    if user_id and user_id in _pending_params:
-        stored = _pending_params[user_id]
-        user_id = stored["user_id"]
-        business_id = stored["business_id"]
+    # Fallback to in-memory store
+    if not user_id and _user_context:
+        # Get the most recently stored context
+        last_key = list(_user_context.keys())[-1]
+        user_id = _user_context[last_key]["user_id"]
+        business_id = _user_context[last_key]["business_id"]
 
-    # Always return a user — real auth is handled by the Frontend (Supabase JWT)
+    # ALWAYS return a user — never None (which triggers login page)
     return cl.User(
         identifier=user_id or "anonymous",
         metadata={"user_id": user_id, "business_id": business_id},
     )
+
+
+# ── App init ─────────────────────────────────────────────────────────────
+kernel = kernel_init()
+manager = ManagerAgent(kernel)
+business_profiler_queries = BusinessProfilerQueries()
 
 
 @cl.on_chat_start
@@ -104,14 +107,14 @@ async def on_chat_start():
     cl.user_session.set("thread", thread)
 
     app_user = cl.user_session.get("user")
-    user_id = app_user.metadata["user_id"]
-    business_id = app_user.metadata["business_id"]
+    user_id = app_user.metadata["user_id"] if app_user else ""
+    business_id = app_user.metadata["business_id"] if app_user else ""
 
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("business_id", business_id)
     cl.user_session.set("pending_route", None)
     cl.user_session.set("pending_pipeline_end_at", None)
-    
+
     context = business_profiler_queries.get_business_context(user_id, business_id)
     cl.user_session.set("context", context)
 
@@ -120,7 +123,7 @@ async def on_chat_start():
         "I'm your AI assistant. I can help you create engaging social media content, schedule posts, analyze trends, and manage your social media strategy.\n\n"
         "Your business profile has been set up. Whenever you're ready, let me know would you like to work on today?"
     )).send()
-    
+
 @cl.on_message
 async def on_message(message: cl.Message):
     thread = cl.user_session.get("thread")
