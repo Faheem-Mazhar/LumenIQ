@@ -9,77 +9,50 @@ from app.schemas.user_request import UserRequest
 from app.db.business_profiler_queries import BusinessProfilerQueries
 from app.orchestrator.route_types import RouteType, IntentType
 from urllib.parse import parse_qs
-from http.cookies import SimpleCookie
 from typing import Optional
 from chainlit.server import app as chainlit_server_app
 
 
-class QueryParamCookieMiddleware:
-    """ASGI middleware that reads user_id and business_id from iframe query
-    params and sets them as cookies for the WebSocket auth handshake."""
+# ── In-memory store for user context from query params ───────────────────
+_user_params: dict[str, dict[str, str]] = {}
+
+
+class QueryParamMiddleware:
+    """ASGI middleware that captures user_id and business_id from iframe
+    query params and stores them in memory. No cookies needed."""
 
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] == "http":
+        if scope["type"] in ("http", "websocket"):
             query_string = scope.get("query_string", b"").decode()
             params = parse_qs(query_string)
             user_id = params.get("user_id", [None])[0]
             business_id = params.get("business_id", [None])[0]
 
-            if user_id or business_id:
-                original_send = send
-
-                async def modified_send(message):
-                    if message["type"] == "http.response.start":
-                        headers = list(message.get("headers", []))
-                        if user_id:
-                            headers.append((
-                                b"set-cookie",
-                                f"cl_user_id={user_id}; Path=/; SameSite=None; Secure".encode(),
-                            ))
-                        if business_id:
-                            headers.append((
-                                b"set-cookie",
-                                f"cl_business_id={business_id}; Path=/; SameSite=None; Secure".encode(),
-                            ))
-                        message = {**message, "headers": headers}
-                    await original_send(message)
-
-                await self.app(scope, receive, modified_send)
-                return
+            if user_id:
+                _user_params[user_id] = {
+                    "user_id": user_id,
+                    "business_id": business_id or "",
+                }
+                # Store the latest as default for sessions without params
+                _user_params["_latest"] = _user_params[user_id]
 
         await self.app(scope, receive, send)
 
 
-chainlit_server_app.add_middleware(QueryParamCookieMiddleware)
+chainlit_server_app.add_middleware(QueryParamMiddleware)
+
+
+# ── NO @cl.header_auth_callback — this disables Chainlit's login gate ────
+# Without an auth callback, Chainlit serves the app to everyone without
+# requiring login. Real auth is handled by the Frontend (Supabase JWT).
 
 
 kernel = kernel_init()
 manager = ManagerAgent(kernel)
 business_profiler_queries = BusinessProfilerQueries()
-
-DEFAULT_USER_ID = ""
-DEFAULT_BUSINESS_ID = ""
-
-
-@cl.header_auth_callback
-async def header_auth_callback(headers: dict) -> Optional[cl.User]:
-    """Read user_id and business_id from cookies set by the middleware."""
-    cookie_header = headers.get("cookie", "")
-    cookies = SimpleCookie(cookie_header)
-
-    user_id_cookie = cookies.get("cl_user_id")
-    business_id_cookie = cookies.get("cl_business_id")
-
-    user_id = user_id_cookie.value if user_id_cookie else DEFAULT_USER_ID
-    business_id = business_id_cookie.value if business_id_cookie else DEFAULT_BUSINESS_ID
-
-    return cl.User(
-        identifier=user_id,
-        metadata={"user_id": user_id, "business_id": business_id},
-    )
 
 
 @cl.on_chat_start
@@ -88,9 +61,10 @@ async def on_chat_start():
     thread = ChatHistoryAgentThread(chat_history=ChatHistory())
     cl.user_session.set("thread", thread)
 
-    app_user = cl.user_session.get("user")
-    user_id = app_user.metadata["user_id"]
-    business_id = app_user.metadata["business_id"]
+    # Read user context from the middleware's in-memory store
+    latest = _user_params.get("_latest", {})
+    user_id = latest.get("user_id", "")
+    business_id = latest.get("business_id", "")
 
     cl.user_session.set("user_id", user_id)
     cl.user_session.set("business_id", business_id)
@@ -148,3 +122,4 @@ async def on_message(message: cl.Message):
 
     except Exception as e:
         await cl.Message(content = "Something went wrong").send()
+        raise e
